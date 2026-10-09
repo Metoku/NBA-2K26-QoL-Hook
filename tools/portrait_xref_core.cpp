@@ -219,7 +219,7 @@ Report analyze(const std::uint8_t* file, std::size_t size) {
                 const std::uint64_t lower = location > 160 ? location - 160 : 0;
                 // Search backward for the observed x64 sub rsp,0x828 prologue.
                 // This is just a research clue, not a verified function boundary.
-                for (std::uint64_t at = location; at > lower; --at) {
+                for (std::uint64_t at = location + 1; at-- > lower;) {
                     if (at + 7 > sec.file_size) continue;
                     static const std::uint8_t prologue[7] =
                         {0x48, 0x81, 0xEC, 0x28, 0x08, 0x00, 0x00};
