@@ -1,0 +1,33 @@
+name: Windows x64 Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build Release
+        run: cmake --build build --config Release --parallel
+
+      - name: Run smoke test
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: NBA2K26QoLHook-windows-x64
+          path: build/Release/NBA2K26QoLHook.dll
+          if-no-files-found: error
