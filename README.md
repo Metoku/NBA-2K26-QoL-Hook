@@ -42,7 +42,15 @@ See [the offline MyNBA portrait test protocol](docs/portrait-investigation.md) f
 
 The three offline MyNBA snapshots show a team-dependent portrait fallback, but the runtime image-selection function is still unknown. We are moving toward an **automatic, portrait-only override**, not per-player roster edits.
 
-To fingerprint your installed Steam build without launching the game (Python 3.11+):
+To fingerprint your installed Steam build without launching the game or installing Python, use **Windows PowerShell** (included with Windows):
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\game_build_fingerprint.ps1" -Executable "C:\path\to\NBA2K26.exe" -Json
+```
+
+Replace the quoted executable path with the actual NBA 2K26 Steam executable. Run the command from the repository's root directory. This reads the game file without launching or changing it.
+
+Alternative (Python 3.11+ if already installed):
 
 ```powershell
 python tools/game_build_fingerprint.py "C:\path\to\NBA2K26.exe" --json
