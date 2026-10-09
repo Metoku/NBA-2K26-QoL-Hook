@@ -45,6 +45,23 @@ implement the portrait fix yet.
 - Writes a **local text report**. No internet calls or automatic upload.
 - Does not write to the game directory or edit saves.
 
+## Extra code context in the report
+
+Each tentative code reference now includes a **small, read-only hex window**
+from its containing executable PE section (up to 64 bytes before and 167
+bytes including/after the candidate). Every window reports its starting
+FILE offset and RVA, plus the candidate's position within the window.
+
+This means a reviewer can use a disassembler on the small excerpt to
+examine nearby register, call and branch instructions without requesting
+the full proprietary game executable. The window is not guaranteed to begin
+at a valid x64 instruction boundary; any apparent disassembly must be
+validated against actual surrounding control flow.
+
+Use the same portable EXE workflow as above. The updated artifact will
+produce an expanded text report, and the earlier report remains valid
+evidence for the original candidates.
+
 ## Important limits
 
 The scanner is **not a disassembler** and does not validate instruction
