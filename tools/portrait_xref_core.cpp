@@ -195,6 +195,82 @@ Report analyze(const std::uint8_t* file, std::size_t size) {
             report.references.push_back(std::move(candidate));
         }
     }
+    // Infer possible starts of nearby label-formatting routines from the
+    // confirmed string-reference patterns. The stack-frame prologue is only a
+    // heuristic and does not prove that a call target is a real function.
+    struct Formatter {
+        std::string label;
+        std::uint32_t entry_rva = 0;
+    };
+    std::vector<Formatter> formatters;
+    const std::array<std::pair<const char*, const char*>, 2> labels = {{
+        {"Photo: Force Real Photo", "Photo mode label formatter"},
+        {"Style: Head Shot", "Photo style label formatter"}
+    }};
+    for (const auto& choice : labels) {
+        for (const auto& ref : report.references) {
+            if (ref.label != choice.first) continue;
+            bool found = false;
+            for (const auto& sec : sections) {
+                if (!sec.executable || ref.instruction_file_offset < sec.file_start ||
+                    ref.instruction_file_offset >= sec.file_start + sec.file_size) continue;
+                const auto location = ref.instruction_file_offset - sec.file_start;
+                const auto* p = file + sec.file_start;
+                const std::uint64_t lower = location > 160 ? location - 160 : 0;
+                // Search backward for the observed x64 sub rsp,0x828 prologue.
+                // This is just a research clue, not a verified function boundary.
+                for (std::uint64_t at = location; at > lower; --at) {
+                    if (at + 7 > sec.file_size) continue;
+                    static const std::uint8_t prologue[7] =
+                        {0x48, 0x81, 0xEC, 0x28, 0x08, 0x00, 0x00};
+                    if (std::memcmp(p + at, prologue, 7) == 0) {
+                        formatters.push_back(Formatter{
+                            choice.second, static_cast<std::uint32_t>(
+                                std::uint64_t(sec.rva) + at)
+                        });
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+            if (found) break;
+        }
+    }
+
+    // Candidate CALL rel32 sites to the inferred formatting helpers. E8
+    // occurrences can appear inside other instructions or data: neither a
+    // confirmed call graph nor evidence that the caller loads MyNBA photos.
+    for (const auto& formatter : formatters) {
+        std::size_t collected = 0;
+        for (const auto& sec : sections) {
+            if (!sec.executable || sec.file_size < 5) continue;
+            const auto* p = file + sec.file_start;
+            for (std::uint64_t i = 0; i + 5 <= sec.file_size; ++i) {
+                if (p[i] != 0xE8) continue;
+                const auto displacement = static_cast<std::int32_t>(read32(p + i + 1));
+                const auto target = static_cast<std::int64_t>(sec.rva) +
+                                    static_cast<std::int64_t>(i) + 5 + displacement;
+                if (target != formatter.entry_rva) continue;
+                const auto start = i > 48 ? i - 48 : 0;
+                const auto end = std::min<std::uint64_t>(sec.file_size, i + 5 + 96);
+                CallerHit caller;
+                caller.formatter = formatter.label;
+                caller.tentative_entry_rva = formatter.entry_rva;
+                caller.call_file_offset = sec.file_start + i;
+                caller.call_rva = static_cast<std::uint32_t>(
+                    std::uint64_t(sec.rva) + i);
+                caller.context_file_offset = sec.file_start + start;
+                caller.context_rva = static_cast<std::uint32_t>(
+                    std::uint64_t(sec.rva) + start);
+                caller.call_byte_index = static_cast<std::uint32_t>(i - start);
+                caller.context_bytes.assign(p + start, p + end);
+                report.possible_callers.push_back(std::move(caller));
+                if (++collected >= 32) break;
+            }
+            if (collected >= 32) break;
+        }
+    }
     return report;
 }
 
@@ -233,6 +309,28 @@ std::string format_report(const Report& report) {
             for (std::size_t n = 0; n < width; ++n) {
                 out << std::setfill('0') << std::setw(2)
                     << static_cast<unsigned int>(x.context_bytes[k + n]) << " ";
+            }
+            out << std::dec << std::setfill(' ') << "\n";
+        }
+    }
+    out << "\nProvisional callers of photo label-formatting routines: "
+        << report.possible_callers.size() << "\n";
+    for (const auto& caller : report.possible_callers) {
+        out << "  " << caller.formatter << " tentative_entry_RVA=0x"
+            << std::hex << std::uppercase << caller.tentative_entry_rva
+            << " candidate_call_RVA=0x" << caller.call_rva
+            << std::dec << " candidate_call_file_offset=" << caller.call_file_offset
+            << "\n    Static code window file_offset=" << caller.context_file_offset
+            << " RVA=0x" << std::hex << std::uppercase << caller.context_rva
+            << std::dec << "; candidate begins " << caller.call_byte_index
+            << " bytes into the window. UNVERIFIED INSTRUCTION ALIGNMENT.\n";
+        for (std::size_t k = 0; k < caller.context_bytes.size(); k += 16) {
+            out << "    0x" << std::hex << std::uppercase
+                << static_cast<std::uint64_t>(caller.context_rva) + k << ": ";
+            const auto width = std::min<std::size_t>(16, caller.context_bytes.size() - k);
+            for (std::size_t n = 0; n < width; ++n) {
+                out << std::setfill('0') << std::setw(2)
+                    << static_cast<unsigned>(caller.context_bytes[k + n]) << " ";
             }
             out << std::dec << std::setfill(' ') << "\n";
         }
