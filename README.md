@@ -38,6 +38,18 @@ python tools/compare_snapshots.py before.json after.json --record-index 123
 
 See [the offline MyNBA portrait test protocol](docs/portrait-investigation.md) for what to capture. The comparator does not read game memory or generate exports; a separate tool must supply valid JSON snapshots from the same MyNBA context. The `--record-index` option matches DB2K Editor's exported player records and reports the relevant portrait/team/shoe fields even when unchanged. Replace `123` with the player's actual `index` from the export. No portrait override is implemented yet.
 
+## Automatic Hook investigation (not yet implemented)
+
+The three offline MyNBA snapshots show a team-dependent portrait fallback, but the runtime image-selection function is still unknown. We are moving toward an **automatic, portrait-only override**, not per-player roster edits.
+
+To fingerprint your installed Steam build without launching the game (Python 3.11+):
+
+```powershell
+python tools/game_build_fingerprint.py "C:\path\to\NBA2K26.exe" --json
+```
+
+The report contains executable metadata and a SHA-256 hash. It does **not** identify hook addresses. Read the [automatic hook development notes](docs/hook-development.md) before attempting any modifications.
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
@@ -49,6 +61,7 @@ See [the offline MyNBA portrait test protocol](docs/portrait-investigation.md) f
 
 1. Get a reproducible Windows x64 DLL build and successful smoke test.
 2. Document reproducible portrait behavior on an offline MyNBA test save.
-3. Investigate whether portrait selection can be corrected via existing roster fields before considering hooks.
-4. Investigate the Home/Away shoe-field behavior separately.
-5. Add opt-in settings only once working, testable implementations exist.
+3. Identify the exact installed game build and investigate the portrait-selection routine.
+4. Add a validated opt-in automatic portrait override (no roster writes).
+5. Investigate the Home/Away shoe regression separately.
+6. Release only after in-game testing on backed-up offline saves.
