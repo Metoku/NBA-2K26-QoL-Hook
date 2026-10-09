@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Identify an installed Windows game executable build without modifying it.
+r"""Identify an installed Windows game executable build without modifying it.
 
 Usage:
     python tools/game_build_fingerprint.py "C:\path\to\NBA2K26.exe" --json
