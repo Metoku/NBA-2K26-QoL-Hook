@@ -40,3 +40,10 @@ jobs:
           name: NBA2K26QoLHook-windows-x64
           path: build/Release/NBA2K26QoLHook.dll
           if-no-files-found: error
+
+      - name: Upload standalone portrait reference probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: NBA2K26PortraitXrefProbe-windows-x64
+          path: build/Release/NBA2K26PortraitXrefProbe.exe
+          if-no-files-found: error
