@@ -72,6 +72,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\portrait_string
 This reports file offsets of text matches, **not** a working portrait hook or
 game-memory addresses. The existing DLL still does not modify NBA 2K26.
 
+## Portrait reference research: no-install Windows EXE
+
+We have identified the local game executable build and found `Photo: Force Real Photo` and related presentation strings, but **no working MyNBA override**.
+
+For the next research step, download the separate **NBA2K26PortraitXrefProbe-windows-x64** artifact from the successful **Windows x64 Build** GitHub Actions run, extract it, and double-click `NBA2K26PortraitXrefProbe.exe`. Choose the installed `NBA2K26.exe`. The tool saves `NBA2K26-portrait-reference-report.txt` beside itself.
+
+The probe only reads the game executable; it reports **heuristic static code-reference candidates**, not verified hooks or patchable addresses. See [setup and safety notes](docs/portrait-xref-probe.md). **Do not use the QoL Hook DLL yet.**
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
