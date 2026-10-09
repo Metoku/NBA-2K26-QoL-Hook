@@ -42,6 +42,12 @@ int main() {
         w32(v, sec2 + 20, 0x400); w32(v, sec2 + 36, 0x40000040);
 
         const std::string label = "Photo: Force Real Photo";
+        // Plausible x64 prologue and direct E8 caller, both synthetic.
+        const std::uint8_t prologue[7] =
+            {0x48, 0x81, 0xEC, 0x28, 0x08, 0x00, 0x00};
+        for (std::size_t i = 0; i < 7; ++i) v[0x200 + i] = prologue[i];
+        v[0x250] = 0xE8;
+        w32(v, 0x251, 0xFFFFFFABu); // CALL from RVA 0x1050 to RVA 0x1000
         s16(v, 0x420, label);
         s8(v, 0x4a0, "PortraitTeam");
         w64(v, 0x480, 0x140002020ULL); // absolute pointer to UTF-16LE label
@@ -79,7 +85,20 @@ int main() {
                         x.candidate_byte_index == x.instruction_rva,
                     "Wrong context RVA");
         }
+        bool caller_found = false;
+        for (const auto& caller : report.possible_callers) {
+            if (caller.formatter != "Photo mode label formatter") continue;
+            if (caller.tentative_entry_rva == 0x1000 &&
+                caller.call_rva == 0x1050 &&
+                caller.call_file_offset == 0x250 &&
+                caller.call_byte_index < caller.context_bytes.size() &&
+                caller.context_bytes[caller.call_byte_index] == 0xE8)
+                caller_found = true;
+        }
+        require(caller_found, "Expected candidate CALL to photo label formatter missing");
         const std::string formatted = format_report(report);
+        require(formatted.find("Provisional callers of photo label-formatting routines") !=
+                std::string::npos, "Missing possible callers section");
         require(formatted.find("NOT CONFIRMED") != std::string::npos,
                 "Heuristic warning is missing");
         require(formatted.find("Static code window starts at file_offset=") !=
