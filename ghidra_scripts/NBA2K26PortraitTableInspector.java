@@ -130,6 +130,14 @@ public class NBA2K26PortraitTableInspector extends GhidraScript {
             Map<Long, String> searchTargets = makeCandidateTargets(tables);
             line("Candidate table addresses searched: " + searchTargets.size());
             scanExecutableBlocks(searchTargets);
+
+            // The previous user's read-only report found two particularly
+            // useful references near one another. Record self-validated
+            // machine-code excerpts so a reviewer can disassemble them.
+            line("");
+            line("=== LIKELY TABLE STARTS AND CODE CONTEXT (RESEARCH ONLY) ===");
+            dumpTableStartCodeContext();
+
             line("");
             line("Interpretation:");
             line("- A valid MSVC RTTI name can identify a C++ class, but does NOT prove it controls MyNBA player photos.");
@@ -402,6 +410,85 @@ public class NBA2K26PortraitTableInspector extends GhidraScript {
         if (totalHits == 0) {
             line("No matches is inconclusive. Uncovered mechanisms include dynamic registration,");
             line("different instruction encodings, thunking, and virtual dispatch.");
+        }
+    }
+
+    // The discovered LEA candidates target table starts, not the individual
+    // label-formatter slots. Both formatter slots are exactly 0xB8 bytes
+    // after the corresponding candidate table start.
+    private void dumpTableStartCodeContext() throws Exception {
+        dumpOneCodeContext("Photo mode candidate table start",
+                           0x742A4AL, 0x3ECC9C0L, 0x3ECCA78L);
+        dumpOneCodeContext("Photo style candidate table start",
+                           0x7429EEL, 0x3ECCA80L, 0x3ECCB38L);
+    }
+
+    private void dumpOneCodeContext(String label, long referenceRva,
+                                    long tableStartRva, long formatterSlotRva)
+                                    throws Exception {
+        monitor.checkCancelled();
+        Address reference = imageBase.add(referenceRva);
+        line("");
+        line(label);
+        line("Candidate code reference: " + hex(reference) +
+             " (RVA " + hexRva(referenceRva) + ")");
+        line("Candidate table beginning: " + hex(imageBase.add(tableStartRva)) +
+             " (RVA " + hexRva(tableStartRva) + ")");
+        line("Label formatter pointer: " + hex(imageBase.add(formatterSlotRva)) +
+             " (index " + ((formatterSlotRva - tableStartRva) / 8) +
+             " at +0x" + Long.toHexString(formatterSlotRva - tableStartRva) + ")");
+        if (formatterSlotRva - tableStartRva != 0xB8) {
+            line("WARNING: layout does not match expected relative offset.");
+            return;
+        }
+        try {
+            byte[] ins = new byte[7];
+            if (memory.getBytes(reference, ins) != 7) {
+                line("WARNING: cannot read candidate code reference.");
+                return;
+            }
+            long disp = ((long)(ins[3] & 0xFF)) |
+                        (((long)(ins[4] & 0xFF)) << 8) |
+                        (((long)(ins[5] & 0xFF)) << 16) |
+                        (((long)(ins[6] & 0xFF)) << 24);
+            // x64 disp32 is signed, even though the intermediate is long.
+            if ((disp & 0x80000000L) != 0) disp -= 0x100000000L;
+            long resolvedRva = referenceRva + 7 + disp;
+            boolean isLea = (ins[0] & 0xF8) == 0x48 &&
+                            (ins[1] & 0xFF) == 0x8D &&
+                            (ins[2] & 0xC7) == 0x05;
+            line("Candidate bytes encode REX LEA RIP-relative: " + isLea);
+            line("Candidate resolves to RVA: " + hexRva(resolvedRva) +
+                 " (expected " + hexRva(tableStartRva) + ")");
+            if (!isLea || resolvedRva != tableStartRva) {
+                line("WARNING: reference did not validate; no context will be dumped.");
+                return;
+            }
+
+            final int before = 192;
+            final int after = 224;
+            Address start = reference.subtract(before);
+            byte[] bytes = new byte[before + 7 + after];
+            int got = memory.getBytes(start, bytes);
+            if (got <= 0) {
+                line("WARNING: could not read the surrounding bytes.");
+                return;
+            }
+            line("Raw code window starts at " + hex(start) +
+                 " (RVA " + hexRva(start.subtract(imageBase)) + ")");
+            line("Candidate reference begins at byte index " + before + ".");
+            line("Hexadecimal bytes below are not a confirmed instruction listing.");
+            for (int i = 0; i < got; i += 16) {
+                int limit = Math.min(16, got - i);
+                StringBuilder row = new StringBuilder();
+                row.append("  ").append(hex(start.add(i))).append(": ");
+                for (int j = 0; j < limit; j++) {
+                    row.append(String.format("%02X ", bytes[i+j] & 0xFF));
+                }
+                line(row.toString());
+            }
+        } catch (Exception ex) {
+            line("WARNING: unable to read the code window: " + ex.getMessage());
         }
     }
 
