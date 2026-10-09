@@ -17,6 +17,12 @@ struct ReferenceHit {
     std::uint64_t instruction_file_offset{};
     std::uint32_t instruction_rva{};
     std::uint32_t referenced_rva{};
+    // Small, bounded executable section excerpt for later offline disassembly.
+    // Bytes are NOT decoded or proven to start/end at instruction boundaries.
+    std::uint64_t context_file_offset{};
+    std::uint32_t context_rva{};
+    std::uint32_t candidate_byte_index{};
+    std::vector<std::uint8_t> context_bytes;
 };
 struct Report {
     bool valid = false;
