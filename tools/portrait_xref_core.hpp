@@ -34,6 +34,23 @@ struct CallerHit {
     std::uint32_t call_byte_index{};
     std::vector<std::uint8_t> context_bytes;
 };
+struct FunctionPointerHit {
+    std::string formatter;
+    std::uint32_t tentative_entry_rva{};
+    std::uint64_t pointer_file_offset{};
+    std::uint32_t pointer_rva{};
+    std::uint64_t context_file_offset{};
+    std::uint32_t context_rva{};
+    std::uint32_t pointer_byte_index{};
+    std::vector<std::uint8_t> context_bytes;
+};
+struct PointerSlotReferenceHit {
+    std::string formatter;
+    std::uint32_t pointer_slot_rva{};
+    std::uint64_t reference_file_offset{};
+    std::uint32_t reference_rva{};
+    std::string reference_kind;
+};
 struct Report {
     bool valid = false;
     std::string error;
@@ -41,6 +58,8 @@ struct Report {
     std::vector<StringHit> strings;
     std::vector<ReferenceHit> references;
     std::vector<CallerHit> possible_callers;
+    std::vector<FunctionPointerHit> function_pointer_slots;
+    std::vector<PointerSlotReferenceHit> slot_references;
 };
 
 // Static heuristic analysis only; returned references are NOT decoded instructions
