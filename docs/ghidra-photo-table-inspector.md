@@ -36,6 +36,33 @@ If you cannot find the script, use Script Manager's **Script Directories /
 Bundle Manager** to add the directory holding the Java file and refresh.
 There is no need to paste source code into PowerShell.
 
+## Follow-up after the first successful report
+
+The first run successfully verified the user's SHA-256 and discovered two
+plausible `LEA` references:
+
+- `0x140742A4A` -> first candidate table start `0x143ECC9C0`
+- `0x1407429EE` -> second candidate table start `0x143ECCA80`
+
+The corresponding photo-mode and photo-style function pointers occupy the
+same `+0xB8` slot relative to these candidate starts (table index 23).
+This matching layout strengthens the hypothesis that these are two related
+C++ dispatch tables, but the owning class and portrait behavior remain
+**unknown**. No valid MSVC RTTI was found on that run.
+
+An updated version of the **same** script now validates these specific
+`LEA` targets and includes bounded raw code excerpts around the two
+references. It **skips the previous 768 MiB-wide code scan** because those
+reference locations have already been established.
+
+To use it, simply download the updated Java file and **replace** the
+existing copy in your `ghidra_scripts` folder. Refresh Ghidra Script
+Manager, run it again, and send the new text report.
+
+We do not need screenshots of pointer bytes, a full automatic analysis, or
+the executable itself. This next pass is about **where the table starts are
+used**, not about applying an unverified portrait patch.
+
 ## What the script examines
 
 - Photo mode formatter slot at RVA `0x3ECCA78` (currently points to
@@ -48,9 +75,12 @@ There is no need to paste source code into PowerShell.
 - Lists neighboring pointers, distinguishing executable and data targets.
 - Reports already-known Ghidra references; these can be incomplete if
   automatic analysis is disabled.
-- Performs a **capped, read-only code scan** for possible RIP-relative
-  references to the candidate vftable starts. These are not instruction-
-  boundary-confirmed and may have false positives or omissions.
+- The initial version performed a **capped read-only code scan** to find
+  candidate references. The latest version skips repeating the expensive
+  scan and validates the two previously observed LEA references directly,
+  capturing a small code window around each.
+- The byte excerpts are not disassembled or proven to be complete functions;
+  they remain investigative evidence rather than patchable targets.
 - Writes the report to the user-selected path **only**.
 
 **Important:** a class owning these tables may control arena presentation
