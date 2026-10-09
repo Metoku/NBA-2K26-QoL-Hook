@@ -25,6 +25,9 @@ jobs:
       - name: Run smoke test
         run: ctest --test-dir build -C Release --output-on-failure
 
+      - name: Test snapshot comparator
+        run: python -m unittest discover -s tests -p "test_*.py" -v
+
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
