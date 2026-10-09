@@ -58,6 +58,20 @@ python tools/game_build_fingerprint.py "C:\path\to\NBA2K26.exe" --json
 
 The report contains executable metadata and a SHA-256 hash. It does **not** identify hook addresses. Read the [automatic hook development notes](docs/hook-development.md) before attempting any modifications.
 
+## Exact build portrait research (no Python required)
+
+The local NBA 2K26 Steam executable has been identified by SHA-256.
+See the [build research notes](docs/game-build-research.md).
+To run an optional **read-only** scan for portrait-related strings in
+your executable using built-in Windows PowerShell, from the repository root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\portrait_string_probe.ps1" -Executable "C:\path\to\NBA2K26.exe" -Json
+```
+
+This reports file offsets of text matches, **not** a working portrait hook or
+game-memory addresses. The existing DLL still does not modify NBA 2K26.
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
