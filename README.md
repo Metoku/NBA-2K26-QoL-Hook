@@ -26,6 +26,17 @@ The release DLL is typically at `build/Release/NBA2K26QoLHook.dll`. A smoke test
 
 On GitHub, open **Actions → Windows x64 Build → Run workflow** after the workflow is committed, or let it run on `main` pushes. Download the `NBA2K26QoLHook-windows-x64` artifact from the finished run.
 
+## Portrait diagnosis (research-only)
+
+The first investigation tool is a local JSON snapshot comparator (standard Python 3, no extra packages):
+
+```powershell
+python tools/compare_snapshots.py before.json after.json
+python tools/compare_snapshots.py before.json after.json --all
+```
+
+See [the offline MyNBA portrait test protocol](docs/portrait-investigation.md) for what to capture. The comparator does not read game memory or generate exports; a separate tool must supply valid JSON snapshots from the same MyNBA context. No portrait override is implemented yet.
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
