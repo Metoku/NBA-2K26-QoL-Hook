@@ -24,12 +24,23 @@ struct ReferenceHit {
     std::uint32_t candidate_byte_index{};
     std::vector<std::uint8_t> context_bytes;
 };
+struct CallerHit {
+    std::string formatter;
+    std::uint32_t tentative_entry_rva{};
+    std::uint64_t call_file_offset{};
+    std::uint32_t call_rva{};
+    std::uint64_t context_file_offset{};
+    std::uint32_t context_rva{};
+    std::uint32_t call_byte_index{};
+    std::vector<std::uint8_t> context_bytes;
+};
 struct Report {
     bool valid = false;
     std::string error;
     std::uint64_t file_size{};
     std::vector<StringHit> strings;
     std::vector<ReferenceHit> references;
+    std::vector<CallerHit> possible_callers;
 };
 
 // Static heuristic analysis only; returned references are NOT decoded instructions
