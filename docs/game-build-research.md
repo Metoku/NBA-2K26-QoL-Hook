@@ -39,6 +39,51 @@ The result:
 
 Share **only the JSON text report**, not copyrighted executable bytes.
 
+
+## October 9: nearby photo-mode UI strings (confirmed local evidence)
+
+A second **read-only** PowerShell inspection decoded 2400 bytes of UTF-16LE
+text beginning at file offset 65,876,000 in the exact executable above.
+It produced the following neighboring labels, in order:
+
+- `3D Logo (R)`, `Workmark`, `Style: %s`, `Pinned`, `MyPlayer`
+- `Marquee Home`, `Marquee Away`, `Logo: %s`
+- **`Photo: Force Real Photo`**
+- **`Photo: Always Render`**
+- **`Photo: Use Assigned Team`**
+- **`Style: Action Shot`**
+- **`Style: Head Shot`**
+- `Player`, `Render Team Starter 0` through `Render Team Starter 4`,
+  `Render Team Best Starter`, `Render Opponent Team Starter 0` through 4,
+  `Render Best player of the game`, `Marquee Home Best Player`,
+  `Marquee Away Best Player`, and `Portrait: %s`.
+
+### Interpretation and limits
+
+The labels **suggest** multiple photo-source policies already exist somewhere
+in the executable. In particular, "Force Real Photo" sounds similar to the
+desired MyNBA outcome. However, adjacency to logos, marquees, team starter
+slots, and overlay canvases suggests a **presentation/arena graphics** feature,
+not necessarily the MyNBA player-card portrait system.
+
+Neither the numeric policy values, configuration storage, caller functions,
+code references, affected screens, nor runtime selectability are known. The
+string's FILE offset must never be used as a game-memory hook or patch target.
+
+### Next research action
+
+Identify *cross references* from executable code or data to the UTF-16LE
+"Photo: Force Real Photo" string and neighboring choices, using validated
+read-only local static analysis. Then determine whether that subsystem is
+shared with the MyNBA player-card image-selection path. Investigate
+`PortraitTeam`, `ActionShotTeam`, `PhotoId`, and `ActionShotId` as separate
+leads, but do not assume all names in the executable map directly to the
+DB2K Editor's current 507-field roster schema.
+
+**Nothing in this finding establishes a callable runtime function, a safe
+signature, or a working automatic override.** Keep the hook disabled until
+a function and behavior have been verified on the exact build.
+
 ## Further investigation
 
 A game-specific runtime hook still requires *local code analysis* of this exact
