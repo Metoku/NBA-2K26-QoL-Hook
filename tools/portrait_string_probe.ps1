@@ -25,7 +25,7 @@ if (-not [IO.File]::Exists($resolvedPath)) { throw 'Executable path is not a fil
 
 # Deliberately narrow to words that could identify portrait-related strings.
 $pattern = 'portrait|headshot|action[_ ]?shot|action[_ ]?photo|player[_ ]?photo|photo[_ ]?id|team[_ ]?photo'
-$regex = New-Object System.Text.RegularExpressions.Regex(
+$regex = [System.Text.RegularExpressions.Regex]::new(
     $pattern,
     ([System.Text.RegularExpressions.RegexOptions]::IgnoreCase -bor
      [System.Text.RegularExpressions.RegexOptions]::CultureInvariant)
