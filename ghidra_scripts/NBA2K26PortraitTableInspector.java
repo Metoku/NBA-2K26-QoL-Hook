@@ -127,9 +127,10 @@ public class NBA2K26PortraitTableInspector extends GhidraScript {
             line("=== LIMITED EXECUTABLE-BLOCK REFERENCE SEARCH ===");
             line("Pattern recognition only: 7-byte REX+LEA/MOV RIP-relative and 6-byte FF15/FF25 indirect call/jmp.");
             line("A match is NOT confirmed to begin at an instruction boundary or belong to an executed code path.");
-            Map<Long, String> searchTargets = makeCandidateTargets(tables);
-            line("Candidate table addresses searched: " + searchTargets.size());
-            scanExecutableBlocks(searchTargets);
+            line("Previously completed on the confirmed executable: two tentative LEA references");
+            line("at RVAs 0x7429EE and 0x742A4A. The lengthy full-code scan is");
+            line("intentionally skipped on this follow-up run. We inspect those");
+            line("exact locations and validate their RIP-relative targets below.");
 
             // The previous user's read-only report found two particularly
             // useful references near one another. Record self-validated
