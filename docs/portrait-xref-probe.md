@@ -79,6 +79,25 @@ The earlier detailed report suggests the photo modes are encoded as 0, 1
 and 2, and the style as 0 or 1 **within this particular label-formatting
 object**; these are not confirmed universal game config values.
 
+## Static function pointers (new after zero direct calls)
+
+The user's latest report found **0** direct `CALL rel32` references to
+the two tentative photo-label formatting helpers. This is inconclusive:
+C++ virtual methods or registered callbacks can be invoked indirectly.
+
+The probe now also checks for **naturally aligned 64-bit pointers** in
+non-executable PE sections that contain the image-base virtual address of
+either tentative formatter entry. Such pointers might belong to a C++
+vtable, callback registry, or other data structure. For each candidate it
+reports a small bounded context window. It also searches for simple
+RIP-relative LEA/MOV references and indirect FF15/FF25 CALL/JMP patterns
+targeting the exact pointer slot.
+
+These are additional **heuristic** signals, not proof of a function call,
+real vtable, or player-photo override. No matches remain inconclusive;
+other reference encodings, dynamic registration, and indirect dispatch
+aren't covered. Do not interpret pointer slots as addresses to patch.
+
 ## Important limits
 
 The scanner is **not a disassembler** and does not validate instruction
