@@ -66,8 +66,26 @@ int main() {
         require(string_found, "Expected UTF-16LE label was not discovered");
         require(direct_found, "Expected direct RIP-relative candidate was not discovered");
         require(indirect_found, "Expected pointer table candidate was not discovered");
-        require(format_report(report).find("NOT CONFIRMED") != std::string::npos,
+        for (const auto& x : report.references) {
+            if (x.label != label) continue;
+            require(!x.context_bytes.empty(), "Missing context bytes");
+            require(x.context_bytes.size() <= 231, "Context exceeds 64+7+160 bound");
+            require(x.candidate_byte_index < x.context_bytes.size(), "Invalid byte index");
+            require(x.context_bytes.at(x.candidate_byte_index) == 0x48,
+                    "Context should include the candidate REX byte");
+            require(x.context_file_offset + x.candidate_byte_index ==
+                        x.instruction_file_offset, "Wrong context file offset");
+            require(static_cast<std::uint64_t>(x.context_rva) +
+                        x.candidate_byte_index == x.instruction_rva,
+                    "Wrong context RVA");
+        }
+        const std::string formatted = format_report(report);
+        require(formatted.find("NOT CONFIRMED") != std::string::npos,
                 "Heuristic warning is missing");
+        require(formatted.find("Static code window starts at file_offset=") !=
+                    std::string::npos, "Code window is missing from report");
+        require(formatted.find("48 8D 0D") != std::string::npos,
+                "Expected LEA bytes missing from code window");
         const auto malformed = analyze(reinterpret_cast<const std::uint8_t*>("broken"), 6);
         require(!malformed.valid, "Malformed PE should be rejected");
         std::cout << "PASS: PE parsing, UTF-16LE detection, direct/indirect "
