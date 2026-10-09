@@ -31,6 +31,9 @@ jobs:
       - name: Test PowerShell game fingerprint
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/test_game_build_fingerprint.ps1
 
+      - name: Test read-only portrait string probe
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/test_portrait_string_probe.ps1
+
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
