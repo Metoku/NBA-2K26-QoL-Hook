@@ -10,7 +10,11 @@ This supports a team-dependent photo fallback, but it does **not** locate the re
 
 ## Required next step: identify exact game build
 
-On the user's Windows PC, from a clone or downloaded ZIP of this repository, run in a terminal:
+On the user's Windows PC, from a clone or downloaded ZIP of this repository, run in **Windows PowerShell (no Python installation needed)**:
+
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\game_build_fingerprint.ps1" -Executable "C:\path\to\NBA2K26.exe" -Json
+
+If Python is already installed, the original script is also available:
 
     python tools/game_build_fingerprint.py "C:\path\to\NBA2K26.exe" --json
 
