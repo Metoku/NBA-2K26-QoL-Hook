@@ -238,6 +238,89 @@ Report analyze(const std::uint8_t* file, std::size_t size) {
         }
     }
 
+    // C++ code frequently calls virtual methods or registered callbacks.
+    // These routines need not have any direct CALL rel32 site. Search for
+    // naturally aligned 64-bit pointers containing imagebase + tentative
+    // formatter RVA in nonexecutable sections (e.g. a vtable or callback
+    // registry). These are STATIC PE FILE values, not live game pointers.
+    std::map<std::uint64_t, Formatter> formatter_values;
+    for (const auto& formatter : formatters) {
+        if (imagebase <= std::numeric_limits<std::uint64_t>::max() -
+                             formatter.entry_rva) {
+            formatter_values.emplace(imagebase + formatter.entry_rva, formatter);
+        }
+    }
+    std::map<std::uint32_t, std::string> pointer_slots;
+    std::map<std::string, std::size_t> pointer_count;
+    for (const Section& sec : sections) {
+        if (sec.executable || sec.file_size < 8) continue;
+        const auto* p = file + sec.file_start;
+        for (std::uint64_t i = 0; i + 8 <= sec.file_size; i += 8) {
+            const auto it = formatter_values.find(read64(p + i));
+            if (it == formatter_values.end()) continue;
+            if (pointer_count[it->second.label]++ >= 32) continue;
+            const auto rva = static_cast<std::uint32_t>(
+                std::uint64_t(sec.rva) + i);
+            pointer_slots.emplace(rva, it->second.label);
+            const auto start = i > 32 ? i - 32 : 0;
+            const auto end = std::min<std::uint64_t>(sec.file_size, i + 8 + 64);
+            FunctionPointerHit slot;
+            slot.formatter = it->second.label;
+            slot.tentative_entry_rva = it->second.entry_rva;
+            slot.pointer_file_offset = sec.file_start + i;
+            slot.pointer_rva = rva;
+            slot.context_file_offset = sec.file_start + start;
+            slot.context_rva = static_cast<std::uint32_t>(
+                std::uint64_t(sec.rva) + start);
+            slot.pointer_byte_index = static_cast<std::uint32_t>(i - start);
+            slot.context_bytes.assign(p + start, p + end);
+            report.function_pointer_slots.push_back(std::move(slot));
+        }
+    }
+
+    // Provisional code references to an exact pointer slot: REX.W LEA/MOV
+    // with RIP+disp32, or FF 15/25 RIP-relative indirect call/jmp. This is
+    // not instruction-boundary-aware. C++ vtable references usually target
+    // the table as a whole rather than an individual function slot.
+    std::map<std::string, std::size_t> slot_ref_count;
+    for (const Section& sec : sections) {
+        if (!sec.executable || sec.file_size < 6) continue;
+        const auto* p = file + sec.file_start;
+        for (std::uint64_t i = 0; i < sec.file_size; ++i) {
+            std::uint64_t length = 0;
+            std::string kind;
+            if (i + 7 <= sec.file_size &&
+                (p[i] & 0xF8) == 0x48 &&
+                (p[i + 1] == 0x8D || p[i + 1] == 0x8B) &&
+                (p[i + 2] & 0xC7) == 0x05) {
+                length = 7;
+                kind = p[i + 1] == 0x8D ? "potential LEA of slot" :
+                                              "potential MOV from slot";
+            } else if (i + 6 <= sec.file_size && p[i] == 0xFF &&
+                       (p[i + 1] == 0x15 || p[i + 1] == 0x25)) {
+                length = 6;
+                kind = p[i + 1] == 0x15 ? "potential indirect CALL" :
+                                              "potential indirect JMP";
+            } else continue;
+            const std::uint64_t displacement_index = length == 7 ? 3 : 2;
+            const auto displacement = static_cast<std::int32_t>(
+                read32(p + i + displacement_index));
+            const auto target = static_cast<std::int64_t>(sec.rva) +
+                                static_cast<std::int64_t>(i + length) +
+                                displacement;
+            if (target < 0 || target > 0xFFFFFFFFLL) continue;
+            const auto found = pointer_slots.find(static_cast<std::uint32_t>(target));
+            if (found == pointer_slots.end()) continue;
+            if (slot_ref_count[found->second]++ >= 32) continue;
+            report.slot_references.push_back(PointerSlotReferenceHit{
+                found->second, static_cast<std::uint32_t>(target),
+                sec.file_start + i,
+                static_cast<std::uint32_t>(std::uint64_t(sec.rva) + i),
+                kind
+            });
+        }
+    }
+
     // Candidate CALL rel32 sites to the inferred formatting helpers. E8
     // occurrences can appear inside other instructions or data: neither a
     // confirmed call graph nor evidence that the caller loads MyNBA photos.
@@ -312,6 +395,38 @@ std::string format_report(const Report& report) {
             }
             out << std::dec << std::setfill(' ') << "\n";
         }
+    }
+    out << "\nProvisional x64 function pointer slots (NOT confirmed vtables): "
+        << report.function_pointer_slots.size() << "\n";
+    for (const auto& slot : report.function_pointer_slots) {
+        out << "  " << slot.formatter
+            << " tentative_entry_RVA=0x" << std::hex << std::uppercase
+            << slot.tentative_entry_rva << " pointer_slot_RVA=0x"
+            << slot.pointer_rva << std::dec << " pointer_file_offset="
+            << slot.pointer_file_offset << "\n";
+        out << "    Neighboring DATA bytes (may be a callback table): offset="
+            << slot.context_file_offset << " RVA=0x" << std::hex
+            << std::uppercase << slot.context_rva << std::dec
+            << "; pointer starts at index " << slot.pointer_byte_index
+            << "\n";
+        for (std::size_t k = 0; k < slot.context_bytes.size(); k += 16) {
+            out << "    0x" << std::hex << std::uppercase
+                << static_cast<std::uint64_t>(slot.context_rva) + k << ": ";
+            const auto width = std::min<std::size_t>(16, slot.context_bytes.size() - k);
+            for (std::size_t n = 0; n < width; ++n) {
+                out << std::setfill('0') << std::setw(2)
+                    << static_cast<unsigned>(slot.context_bytes[k + n]) << " ";
+            }
+            out << std::dec << std::setfill(' ') << "\n";
+        }
+    }
+    out << "\nProvisional code references to candidate function-pointer slots: "
+        << report.slot_references.size() << "\n";
+    for (const auto& ref : report.slot_references) {
+        out << "  " << ref.formatter << " (" << ref.reference_kind << ")"
+            << " code_RVA=0x" << std::hex << std::uppercase << ref.reference_rva
+            << " slot_RVA=0x" << ref.pointer_slot_rva << std::dec
+            << " code_file_offset=" << ref.reference_file_offset << "\n";
     }
     out << "\nProvisional callers of photo label-formatting routines: "
         << report.possible_callers.size() << "\n";
