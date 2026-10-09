@@ -46,6 +46,7 @@ public class NBA2K26PlayerPhotoFieldTrace extends GhidraScript {
     private static final int MAX_MATCHES_PER_STRING = 12;
     private static final int MAX_POINTERS = 80;
     private static final int MAX_CODE_REFS = 100;
+    private static final int MAX_CODE_REFS_PER_LABEL = 12;
     private static final long MAX_DATA_BYTES = 384L * 1024 * 1024;
     private static final long MAX_CODE_BYTES = 1152L * 1024 * 1024;
 
@@ -325,6 +326,7 @@ public class NBA2K26PlayerPhotoFieldTrace extends GhidraScript {
         byte[] buffer = new byte[CHUNK + 8];
         long remaining = MAX_CODE_BYTES;
         int total = 0;
+        Map<String,Integer> refsPerLabel = new LinkedHashMap<String,Integer>();
         monitor.setMessage("Finding possible code references to photo-data strings");
         for (MemoryBlock block : memory.getBlocks()) {
             if (!block.isInitialized() || !block.isExecute() || remaining <= 0 ||
@@ -361,6 +363,10 @@ public class NBA2K26PlayerPhotoFieldTrace extends GhidraScript {
                     long targetRva = addressRva + 7 + displacement;
                     Target target = targets.get(targetRva);
                     if (target == null) continue;
+                    int seen = refsPerLabel.containsKey(target.label) ?
+                        refsPerLabel.get(target.label) : 0;
+                    if (seen >= MAX_CODE_REFS_PER_LABEL) continue;
+                    refsPerLabel.put(target.label, seen + 1);
                     total++;
                     line("  " + target.label + " (" + target.kind + ") candidate " +
                          hex(at) + " -> " + hex(target.address));
