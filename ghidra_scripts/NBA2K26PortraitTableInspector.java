@@ -33,6 +33,7 @@ import java.util.Map;
  */
 public class NBA2K26PortraitTableInspector extends GhidraScript {
 
+    private static final String EXPECTED_SHA256 = "efbfce3d628e17a16d4cba0c28ed09767d21abef422adc49ca26752ed40a8a39";
     private static final long[] SLOT_RVAS = { 0x3ECCA78L, 0x3ECCB38L };
     private static final long[] FORMATTER_RVAS = { 0x7205A0L, 0x720620L };
     private static final String[] LABELS = {
@@ -81,6 +82,16 @@ public class NBA2K26PortraitTableInspector extends GhidraScript {
             return;
         }
 
+        String importedSha = currentProgram.getExecutableSHA256();
+        if (importedSha != null && !importedSha.isEmpty() &&
+            !EXPECTED_SHA256.equalsIgnoreCase(importedSha)) {
+            printerr("The imported program's SHA-256 does not match the studied game build.");
+            printerr("Expected: " + EXPECTED_SHA256);
+            printerr("Imported: " + importedSha);
+            printerr("Aborting to avoid misleading analysis of the wrong version.");
+            return;
+        }
+
         // This is the only file we create: a text report selected by the user.
         File destination = askFile("Save NBA 2K26 table research report", "Save");
         try (PrintWriter writer = new PrintWriter(
@@ -91,9 +102,10 @@ public class NBA2K26PortraitTableInspector extends GhidraScript {
             line("STATIC RESEARCH ONLY; NO PATCHES OR PROCESS ATTACHMENT");
             line("Program: " + currentProgram.getName());
             line("Loaded Ghidra image base: " + hex(imageBase));
-            line("Known reference build SHA-256: efbfce3d628e17a16d4cba0c28ed09767d21abef422adc49ca26752ed40a8a39");
-            line("NOTE: the script does NOT hash your imported executable.");
-            line("If this is a different executable/build, the known RVAs may be invalid.");
+            line("Known reference build SHA-256: " + EXPECTED_SHA256);
+            line("Imported Ghidra SHA-256 metadata: " + (importedSha == null ? "(not available)" : importedSha));
+            line("When Ghidra provides an imported SHA-256, this script verifies it.");
+            line("Otherwise, verify your EXE build by the read-only PowerShell fingerprint tool.");
             line("");
 
             List<Table> tables = new ArrayList<>();
