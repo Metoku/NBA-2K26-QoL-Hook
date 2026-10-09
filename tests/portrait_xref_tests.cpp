@@ -55,6 +55,9 @@ int main() {
         w32(v, 0x213, 0x2020 - 0x1017); // LEA: direct RIP-relative label
         v[0x220] = 0x48; v[0x221] = 0x8b; v[0x222] = 0x0d;
         w32(v, 0x223, 0x2080 - 0x1027); // MOV: RIP-relative pointer slot
+        w64(v, 0x520, 0x140001000ULL); // PE absolute VA to formatter, e.g. vtable
+        v[0x260] = 0x48; v[0x261] = 0x8d; v[0x262] = 0x05;
+        w32(v, 0x263, 0x2120 - 0x1067); // potential LEA to formatter pointer slot
 
         const auto report = analyze(v.data(), v.size());
         require(report.valid, "Valid x64 PE rejected");
@@ -96,9 +99,34 @@ int main() {
                 caller_found = true;
         }
         require(caller_found, "Expected candidate CALL to photo label formatter missing");
+        bool pointer_found = false, pointer_reference_found = false;
+        for (const auto& slot : report.function_pointer_slots) {
+            if (slot.formatter == "Photo mode label formatter" &&
+                slot.tentative_entry_rva == 0x1000 &&
+                slot.pointer_rva == 0x2120 &&
+                slot.pointer_file_offset == 0x520 &&
+                slot.pointer_byte_index < slot.context_bytes.size() &&
+                slot.context_file_offset + slot.pointer_byte_index == slot.pointer_file_offset) {
+                pointer_found = true;
+            }
+        }
+        for (const auto& ref : report.slot_references) {
+            if (ref.formatter == "Photo mode label formatter" &&
+                ref.pointer_slot_rva == 0x2120 &&
+                ref.reference_rva == 0x1060 &&
+                ref.reference_kind == "potential LEA of slot") {
+                pointer_reference_found = true;
+            }
+        }
+        require(pointer_found, "Expected static formatter function pointer missing");
+        require(pointer_reference_found, "Expected tentative reference to pointer slot missing");
         const std::string formatted = format_report(report);
         require(formatted.find("Provisional callers of photo label-formatting routines") !=
                 std::string::npos, "Missing possible callers section");
+        require(formatted.find("Provisional x64 function pointer slots") !=
+                std::string::npos, "Missing function pointer report section");
+        require(formatted.find("Provisional code references to candidate function-pointer slots") !=
+                std::string::npos, "Missing pointer slot xref section");
         require(formatted.find("NOT CONFIRMED") != std::string::npos,
                 "Heuristic warning is missing");
         require(formatted.find("Static code window starts at file_offset=") !=
