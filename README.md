@@ -33,9 +33,10 @@ The first investigation tool is a local JSON snapshot comparator (standard Pytho
 ```powershell
 python tools/compare_snapshots.py before.json after.json
 python tools/compare_snapshots.py before.json after.json --all
+python tools/compare_snapshots.py before.json after.json --record-index 123
 ```
 
-See [the offline MyNBA portrait test protocol](docs/portrait-investigation.md) for what to capture. The comparator does not read game memory or generate exports; a separate tool must supply valid JSON snapshots from the same MyNBA context. No portrait override is implemented yet.
+See [the offline MyNBA portrait test protocol](docs/portrait-investigation.md) for what to capture. The comparator does not read game memory or generate exports; a separate tool must supply valid JSON snapshots from the same MyNBA context. The `--record-index` option matches DB2K Editor's exported player records and reports the relevant portrait/team/shoe fields even when unchanged. Replace `123` with the player's actual `index` from the export. No portrait override is implemented yet.
 
 ## Limitations and safety
 
