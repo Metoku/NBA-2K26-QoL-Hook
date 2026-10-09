@@ -178,11 +178,21 @@ Report analyze(const std::uint8_t* file, std::size_t size) {
             if (it == targets.end()) continue;
             const auto& name = it->second.label;
             if (count_by_term[name]++ >= max_references_per_term) continue;
-            report.references.push_back(ReferenceHit{
+            ReferenceHit candidate{
                 name, it->second.kind, sec.file_start + i,
                 static_cast<std::uint32_t>(std::uint64_t(sec.rva) + i),
                 static_cast<std::uint32_t>(target)
-            });
+            };
+            // Capture only a small section-bounded window, including bytes
+            // before the detected pattern. File offsets are not hook addresses.
+            const auto start = i > 64 ? i - 64 : 0;
+            const auto end = std::min<std::uint64_t>(sec.file_size, i + 7 + 160);
+            candidate.context_file_offset = sec.file_start + start;
+            candidate.context_rva = static_cast<std::uint32_t>(
+                std::uint64_t(sec.rva) + start);
+            candidate.candidate_byte_index = static_cast<std::uint32_t>(i - start);
+            candidate.context_bytes.assign(p + start, p + end);
+            report.references.push_back(std::move(candidate));
         }
     }
     return report;
@@ -210,6 +220,22 @@ std::string format_report(const Report& report) {
             << " instruction_file_offset=" << x.instruction_file_offset
             << " instruction_RVA=0x" << std::hex << std::uppercase << x.instruction_rva
             << " target_RVA=0x" << x.referenced_rva << std::dec << "\n";
+        out << "    Static code window starts at file_offset="
+            << x.context_file_offset << " RVA=0x" << std::hex
+            << std::uppercase << x.context_rva << std::dec
+            << "; candidate begins " << x.candidate_byte_index
+            << " bytes into the window. UNVERIFIED INSTRUCTION ALIGNMENT.\n";
+        for (std::size_t k = 0; k < x.context_bytes.size(); k += 16) {
+            out << "    0x" << std::hex << std::uppercase
+                << static_cast<std::uint64_t>(x.context_rva) + k
+                << ": ";
+            const std::size_t width = std::min<std::size_t>(16, x.context_bytes.size() - k);
+            for (std::size_t n = 0; n < width; ++n) {
+                out << std::setfill('0') << std::setw(2)
+                    << static_cast<unsigned int>(x.context_bytes[k + n]) << " ";
+            }
+            out << std::dec << std::setfill(' ') << "\n";
+        }
     }
     out << "\nIMPORTANT: These are tentative static pattern matches, NOT proven cross references.\n";
     out << "The data might belong to in-arena presentation rather than MyNBA cards.\n";
