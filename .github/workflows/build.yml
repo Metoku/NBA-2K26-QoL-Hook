@@ -28,6 +28,9 @@ jobs:
       - name: Test snapshot comparator
         run: python -m unittest discover -s tests -p "test_*.py" -v
 
+      - name: Test PowerShell game fingerprint
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/test_game_build_fingerprint.ps1
+
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
