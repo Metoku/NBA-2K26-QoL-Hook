@@ -62,6 +62,23 @@ Use the same portable EXE workflow as above. The updated artifact will
 produce an expanded text report, and the earlier report remains valid
 evidence for the original candidates.
 
+## Tentative direct callers of photo-mode label formatters
+
+The updated report also scans for potential direct x64 `CALL rel32` sites
+targeting the observed mode/style label-formatting functions. It first
+locates a nearby stack-frame instruction using the mode/style string
+references, then identifies possible direct callers of that entry and saves
+short, bounded machine-code snippets around those CALL bytes.
+
+The report labels these as **provisional callers** because a byte match is
+not necessarily a real executed instruction and the entry-point guess is
+not a verified function boundary. Callers could simply build/debug
+presentation overlays, not implement any MyNBA image selection.
+
+The earlier detailed report suggests the photo modes are encoded as 0, 1
+and 2, and the style as 0 or 1 **within this particular label-formatting
+object**; these are not confirmed universal game config values.
+
 ## Important limits
 
 The scanner is **not a disassembler** and does not validate instruction
