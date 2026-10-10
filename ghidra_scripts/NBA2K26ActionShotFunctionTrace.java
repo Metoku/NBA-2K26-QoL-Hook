@@ -257,36 +257,102 @@ public class NBA2K26ActionShotFunctionTrace extends GhidraScript {
     }
 
     private Region[] findUnwindRegions() throws Exception {
-        MemoryBlock pdata = null;
-        for (MemoryBlock b : mem.getBlocks()) {
-            String name = b.getName().toLowerCase();
-            if (name.equals(".pdata") || name.endsWith(".pdata")) {
-                pdata = b;
-                break;
+        // On x64 PE files the exception directory (IMAGE_DIRECTORY_ENTRY_EXCEPTION,
+        // index 3) gives the RVA and size of the RUNTIME_FUNCTION array.
+        // Relying on the literal Ghidra memory block name ".pdata" is unsafe:
+        // imported sections may be merged or renamed.
+        Address table = null;
+        long tableSize = 0;
+
+        try {
+            if (mem.getByte(base) == (byte)'M' &&
+                mem.getByte(base.add(1)) == (byte)'Z') {
+                long peOffset = Integer.toUnsignedLong(mem.getInt(base.add(0x3c)));
+                if (peOffset < 0x1000) {
+                    Address pe = base.add(peOffset);
+                    int signature = mem.getInt(pe);
+                    Address opt = pe.add(24);
+                    int magic = Short.toUnsignedInt(mem.getShort(opt));
+                    long directories = Integer.toUnsignedLong(mem.getInt(opt.add(108)));
+                    if (signature == 0x00004550 && magic == 0x20b &&
+                        directories > 3) {
+                        Address exceptionDir = opt.add(112 + 3*8);
+                        long rva = Integer.toUnsignedLong(mem.getInt(exceptionDir));
+                        long bytes = Integer.toUnsignedLong(mem.getInt(exceptionDir.add(4)));
+                        if (rva != 0 && bytes >= 12 && bytes <= MAX_PDATA_BYTES) {
+                            Address candidate = base.add(rva);
+                            MemoryBlock block = mem.getBlock(candidate);
+                            if (block != null && block.isInitialized() &&
+                                block.contains(candidate.add(bytes-1))) {
+                                table = candidate;
+                                tableSize = bytes;
+                                line("PE exception directory RVA: " + rva(rva));
+                                line("PE exception directory size: " + bytes);
+                                line("Ghidra mapped block name: " + block.getName());
+                            } else {
+                                line("WARNING: Exception directory exists, but is not");
+                                line("completely mapped as initialized memory in this import.");
+                            }
+                        } else {
+                            line("WARNING: PE exception directory has zero/invalid RVA or size.");
+                        }
+                    } else {
+                        line("WARNING: no readable x64 PE exception directory in image headers.");
+                    }
+                } else {
+                    line("WARNING: invalid or unsupported PE header offset.");
+                }
+            } else {
+                line("WARNING: image base does not expose MZ header bytes.");
+            }
+        } catch (Exception headerError) {
+            line("WARNING: could not parse PE headers from Ghidra memory: " +
+                 headerError.getMessage());
+        }
+
+        // An explicit .pdata block is a safe alternate if the PE header
+        // is not mapped by Ghidra. Do not scan a guessed data section.
+        if (table == null) {
+            for (MemoryBlock block : mem.getBlocks()) {
+                String name = block.getName().toLowerCase();
+                if (block.isInitialized() &&
+                    (name.equals(".pdata") || name.endsWith(".pdata"))) {
+                    table = block.getStart();
+                    tableSize = Math.min(block.getSize(), MAX_PDATA_BYTES);
+                    line("Fallback initialized .pdata block: " + hx(table));
+                    break;
+                }
             }
         }
-        if (pdata == null || !pdata.isInitialized()) {
-            line("WARNING: no initialized .pdata block in this import.");
+        if (table == null) {
+            line("No mapped PE runtime-function table found.");
+            line("Memory block summary (first 20) for importer diagnosis:");
+            int count = 0;
+            for (MemoryBlock b : mem.getBlocks()) {
+                if (count++ >= 20) break;
+                line("  " + b.getName() + " " + hx(b.getStart()) +
+                     " length=" + b.getSize() +
+                     " initialized=" + b.isInitialized() +
+                     " executable=" + b.isExecute());
+            }
             return null;
         }
+
         Region[] matches = new Region[TARGET_RVAS.length];
-        long span = Math.min(pdata.getSize(), MAX_PDATA_BYTES);
-        if (span != pdata.getSize()) {
-            line("WARNING: .pdata scan capped at 96 MiB.");
-        }
-        line("PE .pdata start: " + hx(pdata.getStart()));
-        line("PE .pdata scanned bytes: " + span);
+        long span = Math.min(tableSize, MAX_PDATA_BYTES);
+        line("PE runtime-function table: " + hx(table));
+        line("Runtime-function bytes scanned: " + span);
         int accepted = 0;
         for (long offset = 0; offset + 12 <= span; offset += 12) {
             if ((offset & 0xFFFF) == 0) monitor.checkCancelled();
-            Address entry = pdata.getStart().add(offset);
+            Address entry = table.add(offset);
             long begin, end, unwind;
             try {
                 begin = Integer.toUnsignedLong(mem.getInt(entry));
                 end = Integer.toUnsignedLong(mem.getInt(entry.add(4)));
                 unwind = Integer.toUnsignedLong(mem.getInt(entry.add(8)));
             } catch (Exception badRead) {
-                line("Unreadable .pdata at " + hx(entry));
+                line("Unreadable runtime-function record at " + hx(entry));
                 break;
             }
             if (begin == 0 || end <= begin || unwind == 0 ||
