@@ -1,64 +1,61 @@
 // NBA2K26PortraitProbe.asi
-// Minimal plugin-loading smoke test for the game's BUILT-IN offline-only launch.
-// NO hooks, executable patches, player edits, anti-cheat operations, or network calls.
-// Creates %TEMP%\\NBA2K26PortraitProbe_<PID>.txt only when actually loaded by NBA2K26.exe.
+// No-op loading smoke test ONLY for NBA 2K26's built-in offline launch.
+// Makes no changes to the game, its resources, EAC, memory or saves.
+// The official Ultimate ASI Loader calls InitializeASI after LoadLibrary,
+// outside the Windows DLL loader lock.
+
 #include <windows.h>
 #include <cwchar>
 #include <cstdio>
 
 namespace {
-DWORD WINAPI ReportLoaded(LPVOID) {
+void ReportLoaded() {
     wchar_t exePath[32768] = {};
-    DWORD length = GetModuleFileNameW(nullptr, exePath, 32768);
-    if (length == 0 || length >= 32768) return 1;
+    const DWORD length = GetModuleFileNameW(nullptr, exePath, 32768);
+    if (length == 0 || length >= 32768) return;
 
     const wchar_t* leaf = wcsrchr(exePath, L'\\');
     leaf = leaf ? leaf + 1 : exePath;
-    if (_wcsicmp(leaf, L"NBA2K26.exe") != 0) return 2;
+    if (_wcsicmp(leaf, L"NBA2K26.exe") != 0) return;
 
     wchar_t temp[MAX_PATH] = {};
-    DWORD size = GetTempPathW(MAX_PATH, temp);
-    if (size == 0 || size >= MAX_PATH) return 3;
+    const DWORD n = GetTempPathW(MAX_PATH, temp);
+    if (n == 0 || n >= MAX_PATH) return;
 
     wchar_t output[MAX_PATH + 80] = {};
-    if (swprintf_s(output, sizeof(output)/sizeof(output[0]),
-        L"%lsNBA2K26PortraitProbe_%lu.txt", temp, GetCurrentProcessId()) < 0)
-        return 4;
+    if (swprintf_s(output, sizeof(output) / sizeof(output[0]),
+                   L"%lsNBA2K26PortraitProbe_%lu.txt", temp,
+                   GetCurrentProcessId()) < 0)
+        return;
 
-    HANDLE file = CreateFileW(output, GENERIC_WRITE, FILE_SHARE_READ, nullptr,
-                             CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (file == INVALID_HANDLE_VALUE) return 5;
+    HANDLE file = CreateFileW(output, GENERIC_WRITE, FILE_SHARE_READ,
+                              nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
+                              nullptr);
+    if (file == INVALID_HANDLE_VALUE) return;
 
     static constexpr char message[] =
         "NBA2K26PortraitProbe.asi loaded inside NBA2K26.exe.\r\n"
-        "PASS: native plugin loader worked for this session.\r\n"
-        "No portrait patch, render hook, memory writes, EAC interaction or save edits.\r\n"
-        "Use only the game's built-in offline-without-EAC Steam launch option.\r\n";
+        "PASS: the plugin initializer ran in this offline session.\r\n"
+        "No portrait patches, hooks, game writes, EAC interaction or save edits.\r\n";
     DWORD written = 0;
-    WriteFile(file, message, static_cast<DWORD>(sizeof(message) - 1), &written, nullptr);
+    WriteFile(file, message, static_cast<DWORD>(sizeof(message) - 1),
+              &written, nullptr);
     CloseHandle(file);
-    return 0;
 }
 }
 
 extern "C" __declspec(dllexport) const char* PortraitProbeVersion() {
-    return "0.1.0-noop-loader-test";
+    return "0.1.1-initializeasi-noop";
+}
+
+// Called by Ultimate ASI Loader outside the Windows loader lock.
+// Never perform work from DLL_PROCESS_ATTACH.
+extern "C" __declspec(dllexport) void InitializeASI() {
+    ReportLoaded();
 }
 
 BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID) {
-    if (reason == DLL_PROCESS_ATTACH) {
+    if (reason == DLL_PROCESS_ATTACH)
         DisableThreadLibraryCalls(module);
-        wchar_t path[32768] = {};
-        DWORD n = GetModuleFileNameW(nullptr, path, 32768);
-        if (n > 0 && n < 32768) {
-            const wchar_t* leaf = wcsrchr(path, L'\\');
-            leaf = leaf ? leaf+1 : path;
-            if (_wcsicmp(leaf, L"NBA2K26.exe") == 0) {
-                // Never wait for a thread while holding the loader lock.
-                HANDLE thread = CreateThread(nullptr, 0, ReportLoaded, nullptr, 0, nullptr);
-                if (thread) CloseHandle(thread);
-            }
-        }
-    }
     return TRUE;
 }
