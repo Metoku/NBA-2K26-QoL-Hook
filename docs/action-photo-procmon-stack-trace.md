@@ -1,0 +1,260 @@
+# Next investigation: observe action-photo IFF resource loader call stacks
+
+**Goal:** Obtain a real code-location lead from a confirmed NBA 2K26
+action-photo override file operation instead of scanning 1.1 GB for
+unrelated player-field offsets.
+
+## Evidence already recorded
+
+ProcMon, filtered to `NBA2K26.exe`, showed successful
+`CreateFile`, metadata and `ReadFile` operations for a mod
+asset path ending in `mods\\player_images\\chr_r9809_a1.iff`.
+The user did not establish which player or portrait this file represents,
+and it is not proven to be a normal baked-in action photo.
+
+**What the trace proves:** the game process accesses at least one
+modded action-photo-format IFF override through filesystem calls.
+**What it does not prove:** which MyNBA selection path decided to
+request it, whether original packed photo assets use the same loader,
+or how traded players are rejected.
+
+## One focused non-invasive step
+
+1. Reopen the **existing** ProcMon capture if still available.
+   Do **not** need to relaunch the game if the original event remains.
+2. Locate the exact `chr_r9809_a1.iff` event and select the
+   successful **CreateFile** record first.
+3. Double-click that event, then open the **Stack** tab in Event Properties.
+   Expand/maximize the window to show the `Module`,
+   `Location`, and (if provided) `Address` columns.
+4. Find rows with **Module = NBA2K26.exe**, preferably several
+   consecutive user-mode `U` frames, and screenshot the full visible
+   stack. The Stack tab's **Copy All** function can also capture
+   it as text, if available.
+5. If possible, repeat step 3 for the **ReadFile** event on the
+   same named IFF. Both stacks might differ: one concerns opening
+   the file, another the asynchronous read.
+6. Only if no old capture remains, record **one short capture**
+   during a known-working action-photo load with the process-name
+   filter. Avoid lengthy logging; stop after the specific event.
+7. If the Stack tab is empty or contains only Windows DLL/kernel
+   frames, **stop**. Don't attach debuggers or bypass any game
+   protection to force a stack trace.
+
+The official Microsoft Sysinternals documentation confirms ProcMon
+records event thread stacks:
+https://learn.microsoft.com/en-us/sysinternals/downloads/procmon
+ProcMon Event Properties help:
+https://documentation.help/Process-Monitor/Event_Properties.htm
+
+## How to interpret, not assume
+
+A stack for `chr_r*.iff` is an empirical *file-I/O loader* path,
+not a proven **portrait eligibility/render decision**.
+
+If a Stack row is shown as `NBA2K26.exe + 0xRVA`, the Ghidra
+address for our known import image base is `0x140000000 + RVA`;
+module-offset formatting must be verified before conversion.
+If it instead shows a runtime absolute pointer, subtract the
+exe's **runtime module load base** before adding the static
+Ghidra image base; ASLR makes runtime and Ghidra VAs differ.
+In either case, request the exact row or screenshot and calculate
+the address carefully before navigating.
+
+The **call site** for opening the asset likely occurs *near* (not
+necessarily exactly at) the returned stack address. A file read can
+occur in a worker thread with a generic code path, so a candidate
+may only lead to file I/O. We should examine disassembly for
+references to IFF naming, player-photo context or resource
+identifier routing. Do **not** patch I/O or hook arbitrary stack
+frames simply because `chr_r` was loaded.
+
+Success milestone: at least one plausible game-module function
+can be linked by a real file-operation call stack to action-photo
+asset loading. Next milestone still requires identifying the
+team-based real-photo vs cyberface selection behavior.
+
+Keep the DLL skeleton **uninstalled**. No live injection, game edits,
+anti-cheat interference, or important-save modification.
+
+## User-provided initial ProcMon stack (2026-10-10)
+
+The user shared a cropped ProcMon stack containing these **user-mode**
+frames for the examined file-operation event:
+
+```
+U 12  NBA2K26.exe  ExportProductMetadata + 0xB06665  0x15673345A
+U 13  <unknown>     0xD69AB                       0xD69AB
+```
+
+The numeric address `0x15673345A` is a **runtime address**, not
+the static Ghidra address. `ExportProductMetadata + 0xB06665`
+is how ProcMon's available symbols identified the address; the
+large displacement does **not** establish that the named export
+directly performs portrait loading.
+
+Next, locate the *exact same* `ExportProductMetadata` symbol in
+Ghidra's Symbol Tree, record its **static image virtual address**,
+and compute `static symbol address + 0xB06665`. Verify this
+lands inside a mapped executable region with real disassembly.
+This can avoid needing a separate runtime module-base lookup,
+**but only if both tools resolve to the same exact named export.**
+
+Alternatively, if Process Explorer/ProcMon clearly supplies
+the game's runtime image base `B_runtime`, the mapping is
+`A_ghidra = 0x140000000 + (0x15673345A - B_runtime)`.
+Do not assume the runtime base from an aligned-looking guess.
+
+Call-stack entries typically indicate a return/callsite address
+inside a **generic file-open or read path**, not a verified
+`ActionShotId` consumer, eligibility condition or hook target.
+The `<unknown>` frame is currently uninterpretable. A complete
+stack and whether the recorded event was `CreateFile` or
+`ReadFile` would help assess this lead.
+
+No patch or hook is authorized by this trace.
+
+## Correction: verified instruction bytes adjacent to the captured stack address
+
+A user Ghidra Listing screenshot showed the following bytes in the
+mapped `.data` region (which has **R/W/X** permissions in this
+particular imported image):
+
+```
+0x156733454  FF 15 D6 FD 5F ED      call qword ptr [rip - 0x12A0022A]
+0x15673345A  E9 01 00 00 00         jmp 0x156733460
+```
+
+The first instruction's **return address** is exactly
+`0x15673345A`, the NBA2K26.exe frame shown by ProcMon on an
+`NtReadFile` / `ReadFile` stack for the `chr_r9809_a1.iff`
+asset. The indirect-call memory operand resolves to
+`0x143D33230` **in Ghidra's displayed image address space**
+(verify this with Ghidra Listing; no assertion about what the
+runtime pointer targets yet). This is stronger evidence than merely
+seeing a program-module frame somewhere in the stack.
+
+This also corrects the prior premature dismissal of
+`0x15673345A` just because it lies in `.data`: the specific
+Ghidra Memory Map screenshot shows the section is marked executable.
+The `ExportProductMetadata + 0xB06665` symbol label is an
+approximation that can point at a nearby **export-name data label**,
+not a reliable function-name resolution; the callsite bytes are
+better evidence.
+
+**Next one-screen Ghidra action:** go to `0x156733454`, disassemble
+from that **instruction start** (press D), and screenshot the Listing
+showing the decoded `CALL` and the resolved indirection. Don't
+start disassembling at `0x15673345A` without checking surrounding
+instruction boundaries. If Ghidra cannot safely disassemble
+`0x156733454`, show the error instead.
+
+This is evidence of a generic Windows file-read caller—not yet
+proof of *who requested* the action portrait or how team-based
+cyberface fallback is chosen. **Do not patch this callsite**.
+
+## Confirmed Ghidra disassembly of the ProcMon ReadFile callsite
+
+The user disassembled `0x156733454` in Ghidra for the fingerprinted
+NBA2K26.exe import. The Listing resolves it directly as:
+
+```asm
+0x156733454  CALL qword ptr [->KERNEL32.DLL::ReadFile]
+0x15673345A  JMP LAB_156733460
+```
+
+This confirms that the ProcMon `NBA2K26.exe` stack frame at
+`0x15673345A` is consistent with the **return address** following a
+Windows `ReadFile` call inside the game executable. The game
+module address has been validated by its actual imported function
+reference, not by the approximate `ExportProductMetadata` symbol.
+
+**Decision:** This is a real I/O callsite but is generic and not
+the action-portrait-versus-cyberface selection branch. Avoid
+patching/hooking this `ReadFile` call. Do not interpret the callsite
+as a photo-specific asset handler.
+
+**Single next observation:** use Process Monitor's **CreateFile**
+event for the same `chr_r9809_a1.iff` override and inspect its
+Stack tab for a distinct game-module callsite. If that stack is
+similarly shallow/generic, end this ProcMon stack approach and
+pivot to image-asset name construction, asset-request APIs or
+MyNBA UI code. Do not demand repeated identical captures.
+
+## User-provided CreateFile stack closes ProcMon investigation
+
+A later screenshot of the successful mod IFF `CreateFile` event shows:
+
+```
+U 10 ntdll.dll      NtCreateFile + 0x14
+U 11 KERNELBASE.dll GetDriveTypeW + 0xE57
+U 12 KERNELBASE.dll CreateFileW + 0x97
+U 13 AcLayers.DLL   AcLayers.DLL + 0xD939
+U 14 NBA2K26.exe    ExportProductMetadata + 0x1E618DBD   0x174245BB2
+U 15 <unknown>      0x11F00BE4
+```
+
+The huge displacement from `ExportProductMetadata` is just an
+approximate symbolization label and **not** a photo-loader name.
+`AcLayers.dll` is a Windows compatibility layer between the
+application and the file API. The additional `NBA2K26.exe`
+frame is a file-create callsite; no evidence yet links it to
+action-photo selection or cyberface fallback.
+
+Combined with the confirmed `ReadFile` import callsite at
+`0x156733454`, this completes a limited objective: demonstrate
+that NBA2K26.exe accesses a modded `chr_r*.iff` override
+using normal OS file APIs. **Do not pursue the generic file-I/O
+call stack further** unless separate evidence links it to photo
+asset resolution or identity. No working hook exists.
+
+### Next distinct hypothesis: asset naming and resolution
+
+Use Ghidra's read-only memory/string search for literal identifiers
+`chr_r`, `_a1.iff`, `player_images`, and optionally
+`ActionShotTeam`. A result with disassembled code cross references
+could point at a resource-name builder; a match by itself is not
+proof of the requested filename or asset selection.
+
+**Stop after a bounded manual string search if there are no matches.**
+The game may construct asset names dynamically or resolve from
+packed archives; absence of a literal is inconclusive. Do not
+start another 1.1 GB field-offset scan.
+
+## User result: asset-name ASCII literal search
+
+User searched Ghidra's memory for the literal ASCII strings
+`chr_r` and `player_images`; **neither was found**.
+This is limited negative evidence: file names can be constructed
+dynamically, encoded in Unicode, obtained from packaged metadata,
+or handled in another resource layer. Do not repeat broad scans.
+
+## Correction: the mod override does not establish missing asset
+
+The user clarified that individual `.iff` files in
+`mods/player_images` **override corresponding assets already bundled
+with NBA 2K26**. A player with no loose `.iff` file can therefore
+still have a valid original action portrait.
+
+**Withdraw the previously suggested test of copying**
+`chr_r9809_a1.iff` to guessed `chr_r4090_a1.iff`.
+Renaming a mod override would introduce an unrelated photograph,
+could be invalid because of internal asset metadata, and cannot
+isolate the roster/team eligibility decision. Do not ask the user
+to undertake that test.
+
+Confirmed behavioral pattern remains: original-team context can show
+the assigned real action photo; after team changes the game can
+choose a cyberface render despite a stable `ActionShotId`. This
+supports, but does **not prove**, a team-sensitive portrait-selection
+policy rather than missing image data.
+
+**Next discovery priority:** locate the MyNBA action-photo-versus-
+rendered-player **selection decision**, not asset existence or generic
+file access. A valid implementation must prefer a usable existing
+photo independent of current team, otherwise retain fallback.
+Potential avenues include targeted analysis of the actual MyNBA
+photo-type UI dispatch path or a trustworthy game/modding API
+source that identifies that selection consumer. Do not treat photo
+mode *label formatter* functions as decision code without linking
+them to MyNBA. No function, hook offset, or working DLL exists yet.
