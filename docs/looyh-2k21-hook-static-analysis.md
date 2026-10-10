@@ -254,3 +254,61 @@ If the destination belongs to unrelated state handling,
 stop this candidate. If the destination references
 player portrait assets/eligibility, trace the check helper
 next, still in static Ghidra.
+
+## Follow-up Ghidra screenshot: jump destination at `0x14347E5DF`
+
+The user opened the branch target
+`LAB_14347E5DF`, with the surrounding Listing and
+partial `UndefinedFunction_14347E3B0` decompilation.
+
+### Confirmed by screenshot
+
+- Six separate preceding branches converge at
+  `0x14347E5DF` (from addresses including
+  `0x14347E3E6`, `0x14347E3F7`,
+  `0x14347E41A`, `0x14347E424`,
+  `0x14347E43D`, and `0x14347E453`).
+- The common branch destination is **not an immediate
+  return**. It continues a broader update/callback flow:
+  ```asm
+  0x14347E5DF MOV  RCX,RSI
+  0x14347E5E2 CALL thunk_FUN_14335D7F0
+  0x14347E5E7 MOV  R8,R14
+  0x14347E5EA MOV  RDX,RAX
+  0x14347E5ED MOV  RCX,RSI
+  0x14347E5F0 CALL FUN_143449960
+  0x14347E5F5 MOV  RCX,[RBX+0x8]
+  0x14347E5F9 LEA  RDX,[RBP+0x30]
+  0x14347E5FD MOVAPS XMM6,XMM0
+  0x14347E600 CALL FUN_143396F00
+  0x14347E605 MOV  RCX,[RBX+0x8]
+  0x14347E609 CALL thunk_FUN_1543FF900
+  ```
+- The Decompiler shows later floating-point calculations,
+  state blending and updates involving `[RBP+0x40]`.
+  These are consistent with state/animation or another
+  general update operation. **No direct action-shot asset,
+  portrait ID, team eligibility or real-photo selector is
+  identified yet.**
+- This weakens the inference that the unique wildcard
+  signature alone establishes a MyNBA photo hook.
+  However, the structural match to the old Looyh patch
+  remains a valid investigative lead, not yet disproven.
+
+### Best bounded next evidence
+
+Rather than hand the user more neighboring addresses,
+request the **complete currently decompiled routine as text**
+in Ghidra: click Decompiler pane, Ctrl+A, Ctrl+C, paste into
+chat (or save as `.txt`). It is labeled
+`UndefinedFunction_14347E3B0` and could be a partial
+function body due to Ghidra's incomplete analysis.
+We need to examine the check
+`thunk_FUN_15442DC90`, the `0x504521A8` comparison,
+the skip path, subsequent state updates and exit together,
+before requesting further investigation.
+
+**Do not remove or NOP** the branch at `0x14347E3F7`,
+even though its post-`JNE` instruction bytes match
+Looyh's older hook. No game patch, live debugger
+or DLL injection has been validated.
