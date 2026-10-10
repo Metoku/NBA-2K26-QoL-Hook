@@ -43,3 +43,35 @@ Home/Away shoes are a separate editing and persistence issue and should be inves
 ## Safety
 
 Local offline testing only. Back up saves. No anti-cheat bypass, no online-game modification, and no guessed production memory writes.
+
+## 2026-10-11: External ASI loading feasibility and EAC risk
+
+The user agreed in principle to installing a separate native DLL/ASI loader
+for offline MyNBA testing. An ASI loader has **not** been installed or
+validated in NBA 2K26. Asset-only `.iff` file loading from `mods` does not
+imply an arbitrary native-plugin loader.
+
+General-purpose candidate: ThirteenAG's open-source Ultimate ASI Loader,
+which can use a proxy DLL named for an imported Windows library and load
+`.asi` plugins in a `scripts` folder. Its advertised support is for games
+that use compatible DLL imports; no NBA 2K26-specific compatibility proof
+has yet been found.
+
+**Crucial:** NBA 2K Support describes Easy Anti-Cheat for NBA 2K on PC
+(https://support.nba2k.com/hc/en-us/articles/42216723600659-NBA-2K-Anti-Cheat-on-PC).
+This means installing an unverified third-party native-code loader—even for
+offline MyNBA—may cause launch failures or anti-cheat action. Do not install
+or launch a loader as part of research without reliable game-specific
+compatibility/support. We will not use instructions to disable or evade
+EAC, and we will not try this in competitive modes.
+
+To identify *candidate* native imports without loading plugins or touching
+EAC, run Ghidra's read-only
+`ghidra_scripts/NBA2K26ImportedDLLsReport.java` on the already imported
+verified NBA2K26.exe build. It lists external library names that match
+known ASI proxy DLL filenames. Even a matching name does not establish
+loader compatibility or permission to run the loader in this game.
+
+Until safe loading can be established, code changes must remain static or
+execute in independent unit tests outside NBA 2K26. The portrait DLL has
+no working runtime code hook.
