@@ -225,46 +225,36 @@ start another 1.1 GB field-offset scan.
 
 User searched Ghidra's memory for the literal ASCII strings
 `chr_r` and `player_images`; **neither was found**.
-This is limited negative evidence: asset names may be dynamically
-assembled, encoded in Unicode, resolved by hashed/indexed names,
-or handled in helper libraries. The observation does not establish
-the absence of a game-side portrait loader.
+This is limited negative evidence: file names can be constructed
+dynamically, encoded in Unicode, obtained from packaged metadata,
+or handled in another resource layer. Do not repeat broad scans.
 
-**Decision:** Stop brute-force string or player-offset searching and
-test the decision behavior in a disposable *offline* setup with a
-known existing photo override.
+## Correction: the mod override does not establish missing asset
 
-### Controlled file-availability test (not a hook)
+The user clarified that individual `.iff` files in
+`mods/player_images` **override corresponding assets already bundled
+with NBA 2K26**. A player with no loose `.iff` file can therefore
+still have a valid original action portrait.
 
-Test player Embiid with known ActionShotId = `4090`.
-A candidate asset path, **not yet proven** to be the correct
-override name for Embiid, is:
-`mods/player_images/chr_r4090_a1.iff`.
+**Withdraw the previously suggested test of copying**
+`chr_r9809_a1.iff` to guessed `chr_r4090_a1.iff`.
+Renaming a mod override would introduce an unrelated photograph,
+could be invalid because of internal asset metadata, and cannot
+isolate the roster/team eligibility decision. Do not ask the user
+to undertake that test.
 
-1. Close the game. Confirm no `chr_r4090_a1.iff` already exists.
-   If it exists, preserve it rather than replacing it.
-2. Make a temporary COPY of an existing known-readable mod asset
-   (e.g. `chr_r9809_a1.iff`), naming the copy
-   `chr_r4090_a1.iff`. Do not rename or alter the source file.
-3. In an expendable offline MyNBA save, first display Embiid on the
-   team that previously displayed his real action photo, to validate
-   whether the copied/renamed override is accepted at all.
-4. In a separate disposable save state, transfer Embiid and inspect
-   the same action-photo UI.
-5. Compare. If the override is visibly used before but not after the
-   transfer, that supports a gating / team-conditioned selector.
-   If used in both, file availability or selection metadata could
-   have explained at least some failures. If neither state uses the
-   override, the test is **inconclusive**: filename/asset internals
-   or caching may invalidate a renamed IFF.
-6. Stop the game, remove only the newly created copy, and restore
-   the normal mod folder. Never modify base game archives or use
-   online modes for this test.
+Confirmed behavioral pattern remains: original-team context can show
+the assigned real action photo; after team changes the game can
+choose a cyberface render despite a stable `ActionShotId`. This
+supports, but does **not prove**, a team-sensitive portrait-selection
+policy rather than missing image data.
 
-Do not assume `r9809` and `r4090` assets are interchangeable.
-The experiment's result must be interpreted against the original-
-team control and the possibility of internal asset-ID bindings.
-
-This is a hypothesis test to narrow the *behavior* and does not
-identify a function address. Hook implementation remains blocked
-on verified selector/data flow.
+**Next discovery priority:** locate the MyNBA action-photo-versus-
+rendered-player **selection decision**, not asset existence or generic
+file access. A valid implementation must prefer a usable existing
+photo independent of current team, otherwise retain fallback.
+Potential avenues include targeted analysis of the actual MyNBA
+photo-type UI dispatch path or a trustworthy game/modding API
+source that identifies that selection consumer. Do not treat photo
+mode *label formatter* functions as decision code without linking
+them to MyNBA. No function, hook offset, or working DLL exists yet.
