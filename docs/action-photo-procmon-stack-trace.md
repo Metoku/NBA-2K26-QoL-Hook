@@ -113,3 +113,42 @@ stack and whether the recorded event was `CreateFile` or
 `ReadFile` would help assess this lead.
 
 No patch or hook is authorized by this trace.
+
+## Correction: verified instruction bytes adjacent to the captured stack address
+
+A user Ghidra Listing screenshot showed the following bytes in the
+mapped `.data` region (which has **R/W/X** permissions in this
+particular imported image):
+
+```
+0x156733454  FF 15 D6 FD 5F ED      call qword ptr [rip - 0x12A0022A]
+0x15673345A  E9 01 00 00 00         jmp 0x156733460
+```
+
+The first instruction's **return address** is exactly
+`0x15673345A`, the NBA2K26.exe frame shown by ProcMon on an
+`NtReadFile` / `ReadFile` stack for the `chr_r9809_a1.iff`
+asset. The indirect-call memory operand resolves to
+`0x143D33230` **in Ghidra's displayed image address space**
+(verify this with Ghidra Listing; no assertion about what the
+runtime pointer targets yet). This is stronger evidence than merely
+seeing a program-module frame somewhere in the stack.
+
+This also corrects the prior premature dismissal of
+`0x15673345A` just because it lies in `.data`: the specific
+Ghidra Memory Map screenshot shows the section is marked executable.
+The `ExportProductMetadata + 0xB06665` symbol label is an
+approximation that can point at a nearby **export-name data label**,
+not a reliable function-name resolution; the callsite bytes are
+better evidence.
+
+**Next one-screen Ghidra action:** go to `0x156733454`, disassemble
+from that **instruction start** (press D), and screenshot the Listing
+showing the decoded `CALL` and the resolved indirection. Don't
+start disassembling at `0x15673345A` without checking surrounding
+instruction boundaries. If Ghidra cannot safely disassemble
+`0x156733454`, show the error instead.
+
+This is evidence of a generic Windows file-read caller—not yet
+proof of *who requested* the action portrait or how team-based
+cyberface fallback is chosen. **Do not patch this callsite**.
