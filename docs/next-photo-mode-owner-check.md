@@ -261,3 +261,55 @@ than continuing endless constructor/table exploration.
 Still **no photo-versus-cyberface selection function or
 working C++ hook**. Research milestones cannot be
 translated to a reliable overall completion percentage.
+
+## Latest screenshot: actual caller is a generic function-pointer dispatcher
+
+The user navigated to `0x14071D1EA`. Ghidra's decompiler
+identifies the containing routine as `FUN_14071CAA0`,
+and the Listing shows this control flow:
+
+```asm
+0x14071D1DE  LEA RAX,[FUN_140742880]
+0x14071D1E5  CMP R8,RAX
+0x14071D1E8  JNZ LAB_14071D1F1
+0x14071D1EA  CALL FUN_140742880
+0x14071D1EF  JMP LAB_14071D1F4
+0x14071D1F1  CALL R8
+```
+
+In the decompiled Listing, this occurs within code that
+traverses linked/list-like objects and invokes callback pointers.
+The direct-call shortcut is consistent with generic dispatch,
+registration or copy/restore work; it does not establish the
+originating player, MyNBA screen, action-photo asset request,
+team check, or cyberface fallback.
+
+**Decision:** this is sufficient to close this bounded
+photo-setting-constructor/callback-chain investigation for now.
+The existence of strings `Force Real Photo`,
+`Always Render`, `Use Assigned Team` is not enough to
+prove that these options govern the MyNBA player-card portrait
+path; several neighboring UI strings concern arena/broadcast
+graphics. Do **not** follow additional generic callbacks or
+patch these dispatch-table entries without a MyNBA-specific
+cross-reference.
+
+### Practical status and alternate source-led research
+
+The game behavior is observed; player photo IDs and
+photo-setting registration are partially understood; but
+no verified game-specific photo selector, executable patch,
+or valid runtime hook exists. The skeleton DLL should
+remain uninstalled.
+
+There is precedent in **NBA 2K16** for a trainer hotkey
+that forced real photographs, but it cannot be used as
+evidence of the location or implementation of an
+equivalent **NBA 2K26** operation:
+https://www.nba2k.org/2016/01/nba-2k16-roster-editor-trainer.html
+
+Further work should prioritize obtaining a **game-version-specific
+existing implementation or documented portrait-policy input**
+to provide a stable entry point. Only then return to targeted
+static code review or controlled offline testing. Generic
+string, offset and file-I/O scans have reached diminishing returns.
