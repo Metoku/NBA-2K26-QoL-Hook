@@ -72,6 +72,24 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\portrait_string
 This reports file offsets of text matches, **not** a working portrait hook or
 game-memory addresses. The existing DLL still does not modify NBA 2K26.
 
+## Current portrait branch validation (research branch)
+
+The Ghidra study of `FUN_1425F6930` in the exact, verified NBA2K26
+build identified four short conditional jumps around the request/team-ID
+comparison. A new **read-only** DLL export `QoLInspectPortraitBranches()`
+validates the loaded host is `NBA2K26.exe`, checks the entire original EXE's
+SHA-256 against the known build, and verifies the four branch encodings in
+loaded image memory. Return codes: 0=verified, 1=not the game process,
+2=unable to read/hash EXE, 3=unknown build, 4=invalid PE/mapping, 5=branch
+bytes do not match. Nothing is patched by this export; the DLL still has
+**no effect on portraits**. There is no DLL injection or loader setup provided.
+
+The source is `src/portrait_gate_validation.cpp` with a pure static unit test
+in `tests/portrait_gate_validation_test.cpp`. Run `ctest` on Windows as above.
+Do not interpret a passing static branch check as proof of a functioning
+portrait override. An eventual hook must preserve behavior when image/team
+references are missing and should only run in backed-up offline MyNBA tests.
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
