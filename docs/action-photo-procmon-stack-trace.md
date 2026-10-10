@@ -220,3 +220,51 @@ proof of the requested filename or asset selection.
 The game may construct asset names dynamically or resolve from
 packed archives; absence of a literal is inconclusive. Do not
 start another 1.1 GB field-offset scan.
+
+## User result: asset-name ASCII literal search
+
+User searched Ghidra's memory for the literal ASCII strings
+`chr_r` and `player_images`; **neither was found**.
+This is limited negative evidence: asset names may be dynamically
+assembled, encoded in Unicode, resolved by hashed/indexed names,
+or handled in helper libraries. The observation does not establish
+the absence of a game-side portrait loader.
+
+**Decision:** Stop brute-force string or player-offset searching and
+test the decision behavior in a disposable *offline* setup with a
+known existing photo override.
+
+### Controlled file-availability test (not a hook)
+
+Test player Embiid with known ActionShotId = `4090`.
+A candidate asset path, **not yet proven** to be the correct
+override name for Embiid, is:
+`mods/player_images/chr_r4090_a1.iff`.
+
+1. Close the game. Confirm no `chr_r4090_a1.iff` already exists.
+   If it exists, preserve it rather than replacing it.
+2. Make a temporary COPY of an existing known-readable mod asset
+   (e.g. `chr_r9809_a1.iff`), naming the copy
+   `chr_r4090_a1.iff`. Do not rename or alter the source file.
+3. In an expendable offline MyNBA save, first display Embiid on the
+   team that previously displayed his real action photo, to validate
+   whether the copied/renamed override is accepted at all.
+4. In a separate disposable save state, transfer Embiid and inspect
+   the same action-photo UI.
+5. Compare. If the override is visibly used before but not after the
+   transfer, that supports a gating / team-conditioned selector.
+   If used in both, file availability or selection metadata could
+   have explained at least some failures. If neither state uses the
+   override, the test is **inconclusive**: filename/asset internals
+   or caching may invalidate a renamed IFF.
+6. Stop the game, remove only the newly created copy, and restore
+   the normal mod folder. Never modify base game archives or use
+   online modes for this test.
+
+Do not assume `r9809` and `r4090` assets are interchangeable.
+The experiment's result must be interpreted against the original-
+team control and the possibility of internal asset-ID bindings.
+
+This is a hypothesis test to narrow the *behavior* and does not
+identify a function address. Hook implementation remains blocked
+on verified selector/data flow.
