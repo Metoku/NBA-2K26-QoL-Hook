@@ -139,3 +139,57 @@ to verify the corresponding photo-mode table
 confirmed, inspect only one owning caller to distinguish
 arena/presentation settings from MyNBA player UI; do not
 change any table slots or patch the executable.
+
+## Third screenshot: both object constructions confirmed
+
+A new Listing screenshot verifies the sibling configuration object:
+
+```asm
+0x140742A4A  LEA RCX,[DAT_143ECC9C0]
+0x140742A51  MOV qword ptr [RAX+0x8],RAX
+0x140742A55  MOV qword ptr [RAX],RCX
+0x140742A58  MOV qword ptr [RAX+0x10],RAX
+0x140742A5C  MOV qword ptr [RAX+0x18],RSI
+0x140742A60  MOV qword ptr [RAX+0x20],RSI
+0x140742A64  MOV qword ptr [RAX+0x28],RSI
+0x140742A6D  LEA R8,[RDI+0x30]
+0x140742A71  MOV RDX,RAX
+0x140742A74  MOV RCX,RDI
+0x140742A77  CALL FUN_14071A8E0
+```
+
+Both previously suspected related tables `0x143ECCA80`
+(photo style) and `0x143ECC9C0` (photo mode) are indeed used
+as the first pointer within sibling initialized objects, followed
+by a common helper call `FUN_14071A8E0` that likely
+registers/attaches the objects. This is **constructor/registration
+evidence**, not photo render-selection evidence.
+
+The Decompiler remained on an unrelated function in this screenshot
+because the enclosing function is not properly analyzed yet.
+
+### Next bounded step: function entry, not another scan
+
+Use the new Ghidra Java script
+[`NBA2K26PhotoModeOwnerBoundary.java`](../ghidra_scripts/NBA2K26PhotoModeOwnerBoundary.java)
+to read only the known 2.67 MB PE exception unwind directory and
+report the containing fragment start/end of
+`0x1407429EE` and `0x140742A4A`. The script does not
+disassemble, patch or create Ghidra functions. It verifies the
+imported SHA-256 first.
+
+This makes the next manual screenshot precise: we can navigate to
+the **actual function fragment entry**, view the enclosing code,
+and investigate the parent context for arena/presentation settings
+versus a MyNBA portrait widget. If it is presentation-only,
+**stop following these table objects**.
+
+**Procedure:** download the Java file, put it in the existing
+`%USERPROFILE%\ghidra_scripts` directory, refresh Ghidra
+Script Manager, run
+`NBA2K26PhotoModeOwnerBoundary`, save
+`photo-mode-owner-boundary.txt`, and upload the resulting
+text report. Script compatibility with the user's Ghidra
+installation has not yet been validated; send the compile
+error verbatim if encountered. This is one quick 2.67 MB
+table read, not another huge executable scan.
