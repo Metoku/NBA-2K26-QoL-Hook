@@ -749,3 +749,34 @@ UTF-16LE prefix `PORTRAIT_CONTEXT` (HEX):
 One targeted Ghidra search; inspect cross-references if
 present. Do NOT patch 2K26 or ask for more byte-signature
 searches unless independently corroborated.
+
+## NBA2K26 semantic search finds the historic PORTRAIT_CONTEXT anchor
+
+User searched the exact UTF-16LE bytes of
+`PORTRAIT_CONTEXT` in the fingerprinted NBA2K26.exe
+Ghidra project. Screenshot shows **ONE match** at
+**VA `0x145406FC0`**. The code unit is currently
+undefined (`?? 50h`), consistent with the game's
+incomplete Ghidra analysis.
+
+This identifier is independently grounded in
+NBA2K21's historical portrait/resource loading function
+`UndefinedFunction_14101d103`, where the original
+Looyh first patch controls a path containing
+`L"PORTRAIT_CONTEXT_{0:x16}"`, subsequently calling
+the `chr_r{0:d4}_a{1}.iff` resolver.
+
+**Next one safe bounded inspection in NBA2K26.exe:**
+Press G → `145406FC0`, inspect raw text to confirm
+the full template (not merely prefix), then define
+UTF-16 string in Ghidra if necessary and request
+XRefs to `0x145406FC0` (press X). A user screenshot
+of the references list or 'no references' is enough.
+If XRefs are absent because auto-analysis is partial,
+do not infer the string is unused; consider a narrowly
+scoped operand-ref search next.
+
+Do not patch, inject or infer that 2K26's
+`PORTRAIT_CONTEXT` consumer is identical to the
+2K21 historical function until following actual code
+references and behavior.
