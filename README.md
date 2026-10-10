@@ -72,6 +72,19 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\portrait_string
 This reports file offsets of text matches, **not** a working portrait hook or
 game-memory addresses. The existing DLL still does not modify NBA 2K26.
 
+## Ghidra table investigation (Java script; no Python)
+
+We located possible C++ dispatch-table pointers for two NBA 2K26
+photo-mode **label formatters**, but have not identified the actual MyNBA
+image-selection function. To investigate their classes without manually
+scrolling through addresses, use the Ghidra Java script in
+[`ghidra_scripts/NBA2K26PortraitTableInspector.java`](ghidra_scripts/NBA2K26PortraitTableInspector.java).
+
+**[Step-by-step setup and safety notes](docs/ghidra-photo-table-inspector.md)**
+explain how to run the script in the existing Ghidra installation and save
+one report. The script needs no standalone Python or Visual Studio and
+does not modify game files, Ghidra's program data, or MyNBA saves.
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
