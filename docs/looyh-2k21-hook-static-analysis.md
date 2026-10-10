@@ -312,3 +312,54 @@ before requesting further investigation.
 even though its post-`JNE` instruction bytes match
 Looyh's older hook. No game patch, live debugger
 or DLL injection has been validated.
+
+## Full user-supplied decompilation resolves single relaxed second-pattern match (2026-10-10)
+
+The user supplied all of `UndefinedFunction_14347e3b0`
+at the match `0x14347E3F7` (NBA2K26.exe, fingerprinted build).
+Its control flow strongly identifies a **VCHTTP network
+request/state handler**, NOT a confirmed player portrait selector.
+The most discriminating direct evidence is a diagnostic call:
+
+```cpp
+FUN_14335cb50(1,0,"VCHTTP","EMPTY","vchttp_request.vcc");
+```
+
+Further contextual indicators:
+- `thunk_FUN_154404530(...)` returns/compares HTTP-like
+  status codes `200`, `0x1F6` (502) and `0x1F7`
+  (503).
+- `thunk_FUN_15442DC90(unaff_RBX[1]) != 0` is the
+  branch condition at `0x14347E3F7`.
+- Reads/comparisons at `+0x10C` and `+0x110`
+  and increment of `+0x10C` suggest buffered
+  request state, lengths or retry accounting.
+  Actual field meanings are **not verified**.
+- A string/code sentinel `0x504521A8` is used to
+  loop/terminate request state; meaning unknown.
+- The shared jump target `0x14347E5DF` performs
+  helper calls and returns to the requester.
+- None of this decompilation names a player,
+  `ActionShotId`, photo team, image resource resolver,
+  or real-photo-versus-render selection.
+
+**Important nuance:** Because the relaxed second signature
+is unusually distinctive and appears inside an HTTP
+request handler, it could reflect **shared engine code
+across 2K21 and 2K26**, rather than a random instruction
+coincidence. The 2021 hook's motivation for NOP'ing that
+branch is still unknown: historical patch semantics were
+inferred from its binary, without the older game executable.
+We CANNOT infer that this 2K26 network branch makes the
+same photo eligibility decision. It may be a networking
+guard unrelated to local offline MyNBA photos. Forcing
+fall-through risks destabilizing network request handling.
+
+**Decision:** Do not NOP or hook `0x14347E3F7`.
+Close this 2K26 wildcard-branch lead unless independent,
+photo-specific evidence connects VCHTTP requests to MyNBA
+photo eligibility. Future study, if any, must establish
+what the original two NBA2K21 patch sites did within
+that game's code, not assume similarity from byte patterns.
+No runtime hook is currently verified. No more
+neighboring screenshots required for this routine.
