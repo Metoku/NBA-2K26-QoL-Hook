@@ -97,3 +97,45 @@ the second independently observed table reference. Focus on
 whether the LEA address gets written into a new object, and
 whether there are nearby identifying calls/strings. Do not
 guess a function entry or create a patch from this reference.
+
+## Second screenshot: dispatch-table pointer is stored in object
+
+The user provided the Listing around `0x1407429EE` through
+`0x140742A3C`, with these directly visible instructions:
+
+```asm
+0x1407429E4  CALL FUN_14334ABD0
+0x1407429E9  TEST RAX,RAX
+0x1407429EC  JZ LAB_140742A0E
+0x1407429EE  LEA RCX,[PTR_LAB_143ECCA80]
+0x1407429F5  MOV qword ptr [RAX+0x8],RAX
+0x1407429F9  MOV qword ptr [RAX],RCX
+0x1407429FC  MOV qword ptr [RAX+0x10],RAX
+0x140742A00  MOV qword ptr [RAX+0x18],RSI
+0x140742A04  MOV qword ptr [RAX+0x20],RSI
+0x140742A08  MOV qword ptr [RAX+0x28],RSI
+0x140742A0C  JMP LAB_140742A11
+0x140742A0E  MOV RAX,RSI
+0x140742A11  LEA R8,[RDI+0x30]
+0x140742A15  MOV RDX,RAX
+0x140742A18  MOV RCX,RDI
+0x140742A1B  CALL FUN_14071A8E0
+```
+
+**Interpretation:** The candidate table start
+`0x143ECCA80` is indeed assigned to an object
+(`[RAX]`) that is passed to a downstream helper. This is
+evidence for initialization/construction of a table-backed
+object rather than merely a stray label reference. The
+identity of the object, whether it serves MyNBA player cards,
+and whether it implements photo vs rendered cyberface choice
+remain **unverified**. The neighboring `FUN_14071A8E0` is
+not automatically a portrait loader.
+
+**Next bounded inspection:** Ghidra go to
+`0x140742A4A` and show several instructions above and below
+to verify the corresponding photo-mode table
+`0x143ECC9C0` assignment. If analogous construction is
+confirmed, inspect only one owning caller to distinguish
+arena/presentation settings from MyNBA player UI; do not
+change any table slots or patch the executable.
