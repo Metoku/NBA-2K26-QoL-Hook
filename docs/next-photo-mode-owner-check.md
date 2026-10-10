@@ -358,3 +358,45 @@ speculative hook or re-scanning the entire EXE.
 
 **Project status remains blocked:** No verified 2K26
 MyNBA photo-selection condition. No hook implemented.
+
+## Ghidra screenshot: photo-mode distinct table method `0x140744910`
+
+The user navigated to `0x140744910` and the Listing
+already labels `FUN_140744910`. The Decompiler pane reads
+`No Function` despite a function header in the Listing;
+this is a partial-analysis/selection problem, not proof of
+invalid instructions. The Listing shows (direct observations):
+
+```asm
+0x140744910  MOV qword ptr [RSP+0x8],RBX
+0x140744915  MOV qword ptr [RSP+0x10],RSI
+0x14074491A  PUSH RDI
+0x14074491B  SUB RSP,0x20
+0x14074491F  MOV RAX,qword ptr [RCX+0x30]
+0x140744923  MOV RSI,RDX
+0x140744926  MOV EDX,dword ptr [RDX+0x18]
+0x140744929  MOV RDI,RCX
+0x14074492C  MOV ECX,0xA
+0x140744931  MOV EBX,dword ptr [RAX+0x1C]
+0x140744934  CALL FUN_141FE3A90
+0x140744939  TEST EAX,EAX
+0x14074493B  JZ LAB_14074494C
+0x14074493D  TEST EBX,EBX
+```
+
+The method appears to process a configuration/state object
+via a helper and a selected value at `[RAX+0x1C]`.
+This **does not prove** any action-photo asset loader or
+MyNBA portrait-vs-render selector. The user's function
+cross-reference shown is a DATA ref
+(`0x155C7EA0C`), not a code caller; likely exception
+metadata, not evidence of a UI caller.
+
+### One final bounded screenshot for this method
+
+Ghidra **G → `140744966`**. Screenshot the Listing
+about `0x14074493B` through `0x1407449A0`,
+especially the branches/return and final helper calls.
+No need to force a Decompiler function or run another
+script; don't modify binaries. If it is simply enum
+validation/setting, close the photo-mode branch.
