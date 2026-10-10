@@ -543,3 +543,46 @@ Determine what processing is skipped and whether another
 resource path is selected. No patching and no need for
 additional 2K26 byte-pattern searches until the original
 2021 logic is understood.
+
+## Verified destination of original second Looyh patch (Epic NBA2K21.exe)
+
+The user showed Ghidra Listing at `0x140FCE76E`.
+It is the **function epilogue**, not an alternate asset handler:
+
+```asm
+0x140FCE76E ADD RSP,0x50
+0x140FCE772 POP RBP
+0x140FCE773 RET
+```
+
+Consequently, the original branch at `0x140FCE5FF`
+has these observed control-flow semantics:
+
+```asm
+0x140FCE5F4 MOV RAX,[RCX+0xC8]
+0x140FCE5FB CMP [RCX+0x60],RAX
+0x140FCE5FF JNZ exit_0x140FCE76E
+0x140FCE605 ... fall through to IFF/resource-handling work
+...
+0x140FCE63A LEA R8,[u_chr_r[0:d4]_a[1].iff]
+```
+
+The NOP patch in Looyh's `forcedisplayphotos` setting
+disables the early return and **forces execution of
+the fall-through asset-related block** when the compared
+64-bit fields differ. These fields' types/semantics
+are **unknown**, and no inference can yet be made
+about safe behavior when photos are unavailable.
+
+This validates the reason this older function is relevant:
+it is an eligibility gate upstream of a character IFF
+resource path. It does NOT validate the structurally
+similar 2K26 VCHTTP request branch (which was a false lead).
+
+**Highest-value next bounded step:** User should inspect
+the **first original Looyh patch** in their NBA2K21.exe
+at `0x14101D107`, with 15–20 surrounding
+instructions and Decompiler if usable. We need both
+original checks before seeking the semantic equivalent
+within NBA2K26.exe. Never NOP or copy historical
+address/signature to 2K26 without validation.
