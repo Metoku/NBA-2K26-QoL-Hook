@@ -16,14 +16,34 @@ The previous static Ghidra scan recorded:
 - `0x14C704C5C`: reference to a `SetActionShotId` diagnostic.
 
 The new script **does not scan all strings or all executable bytes**.
-It uses Windows x64 PE exception-unwind section `.pdata` to seek the
-registered function fragment boundaries for the *known* addresses.
+It reads the **Windows x64 PE exception directory** to locate registered
+function fragments for the *known* addresses. It does not require a
+Ghidra memory block to be named `.pdata`.
 It then attempts **targeted disassembly, function creation and
 decompilation**, if the fragment is 16 KiB or smaller.
 
 A registered unwind fragment is not guaranteed to be an entire logical
 function. Where a fragment or decompilation cannot be verified, the
 script says so rather than inventing a function boundary.
+
+## Follow-up for the first reported error
+
+The first user run successfully verified the executable SHA-256 but reported
+`WARNING: no initialized .pdata block in this import`. It therefore did
+**not** find any function boundaries or decompile any code.
+
+The current version fixes that overly strict memory-block-name check:
+it reads the exception-directory RVA and size directly from the loaded
+PE header and reports the **actual Ghidra memory block name** containing
+the runtime-function table. If PE headers are not imported at the image
+base, it prints a short memory-block diagnostic rather than guessing
+addresses or attempting to create unsafe functions.
+
+**Simply replace the previous Java file with the updated version**,
+refresh Script Manager, run the script, and upload the new report.
+If the directory is not accessible even after this fix, we will
+investigate Ghidra's import layout instead of repeatedly rerunning
+the same scan.
 
 ## Run this in Ghidra (no extra software)
 
