@@ -313,3 +313,48 @@ existing implementation or documented portrait-policy input**
 to provide a stable entry point. Only then return to targeted
 static code review or controlled offline testing. Generic
 string, offset and file-I/O scans have reached diminishing returns.
+
+## New bounded experiment: inspect photo-mode-specific dispatch method
+
+A public historical reference documents Looyh's **NBA 2K21 Hook**
+v0.0.5 implementing **"Force display photos"** / mandatory loading
+of player photos, independent from its separately listed roster
+support. **This does not prove an equivalent 2K26 hook exists.**
+Source: https://www.2kspecialist.net/2020/10/nba2k21-hook-v005-by-looyh-added-force.html
+
+Prior exact-build table report found two sibling candidate dispatch
+tables used to initialize photo mode/style objects. Their adjacent
+differing entries, indexed relative to the proposed table starts,
+are:
+
+| Candidate | Candidate table | Distinct index 20 (+0xA0) |
+| --- | --- | --- |
+| Photo mode | `0x143ECC9C0` | `0x140744910` |
+| Photo style | `0x143ECCA80` | `0x1407449A0` |
+
+**Question:** Are these unique methods merely setting/formatting
+arena broadcast options, or do they expose a reusable
+photo-source override path? We already know the *label
+formatter* entry at table index 23 is **not** selection code.
+
+### One screenshot only (no scanner)
+
+With the exact SHA-matched executable open in Ghidra:
+
+1. Press **G** and enter `140744910`.
+2. Capture the Listing with ~15 instructions below and the
+   Decompiler **only if it resolves the correct function**.
+3. If the area is undefined, use **D** at the function's
+   first instruction, but **do not manually create a random
+   function or modify executable bytes**.
+4. Send that screenshot. We will examine register arguments,
+   fields, calls and how this method differs from the
+   counterpart `0x1407449A0` *only if* the first method
+   yields meaningful new behavior.
+
+If this proves to be setting/serialization code for unrelated
+presentation widgets, close the photo-mode branch. No
+speculative hook or re-scanning the entire EXE.
+
+**Project status remains blocked:** No verified 2K26
+MyNBA photo-selection condition. No hook implemented.
