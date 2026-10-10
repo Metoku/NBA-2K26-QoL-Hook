@@ -104,3 +104,53 @@ known NBA 2K26 photo-resource flow.
 
 Ghidra wildcard syntax reference:
 https://scrapco.de/ghidra_docs/VERSION12/Features/Base/Search/Search_Formats.htm
+
+## Ghidra validation: first relaxed signature produces false positives
+
+The user searched `85 DB 75 ?? 48 85 C0 74` in
+Ghidra. The screenshot returned **13 hits**, all in
+unclassified code units from partially analyzed import.
+
+A focused screenshot at `0x141E834C2` confirms
+actual instructions:
+
+```asm
+0x141E834C2  TEST EBX,EBX
+0x141E834C4  JNZ  LAB_141E834DA
+0x141E834C6  TEST RAX,RAX
+0x141E834C9  JZ   LAB_141E834ED
+0x141E834CB  MOV  R8,RDI
+0x141E834CE  XOR  EDX,EDX
+0x141E834D0  MOV  RCX,RAX
+0x141E834D3  CALL VCRUNTIME140.DLL::memset
+...
+0x141E834DA  TEST RAX,RAX
+0x141E834DD  JZ   LAB_141E834ED
+0x141E834DF  MOV  R8,RDI
+0x141E834E2  MOV  RDX,RBX
+0x141E834E5  MOV  RCX,RAX
+0x141E834E8  CALL VCRUNTIME140.DLL::memmove
+```
+
+This is buffer-handling code, **not a demonstrated
+photo-selector**. The wildcard signature is generic enough
+to occur in many unrelated functions. Do not request
+screenshots of all remaining 12 hits; no evidence currently
+ranks one as portrait-related.
+
+### Better next discriminating search
+
+Use Ghidra Search Memory / Hex with the **second historic
+signature** but wildcard only its near jump's four-byte
+displacement:
+
+```text
+0F 85 ?? ?? ?? ?? 44 8B 45 30 48 8D
+```
+
+This preserves the `JNE` opcode and the six following
+bytes, giving a different, more discriminating structural
+test than the common `TEST/Jcc` pattern. No byte patch,
+no runtime attachment. If zero matches, stop treating
+historic signatures as directly reusable and seek a
+semantic image-selection function instead.
