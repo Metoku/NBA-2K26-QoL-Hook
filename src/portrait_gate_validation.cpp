@@ -4,6 +4,8 @@
 #include <array>
 #include <cstdint>
 #include <cwchar>
+#include <cstring>
+#include <iterator>
 #include <vector>
 #pragma comment(lib, "bcrypt.lib")
 
