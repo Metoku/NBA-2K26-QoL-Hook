@@ -678,3 +678,74 @@ screenshot surrounding Listing rather than creating
 a false function starting in the middle of a basic
 block. No patches until 2K26 resource-path logic
 is independently verified.
+
+## Full first-patch decompilation resolves the historical portrait-resource path
+
+User provided screenshot of `0x14101D107` in NBA2K21.exe
+and a complete pasted 570-line Ghidra decompilation of
+`UndefinedFunction_14101d103` (partial function boundaries:
+`unaff_RSI`, `unaff_EBX`, `unaff_RBP` demonstrate
+that the function entry is **not reliably reconstructed**).
+
+Visible assembly at patch site:
+
+```asm
+0x14101D103 MOV RAX,[RSI+0x18]
+0x14101D107 TEST EBX,EBX
+0x14101D109 JNZ LAB_14101D139
+0x14101D10B TEST RAX,RAX
+0x14101D10E JZ  LAB_14101D12B
+0x14101D110 CMP [RAX],R13
+0x14101D113 JZ  LAB_14101D11A
+0x14101D115 MOV EBX,R12D
+0x14101D118 JMP LAB_14101D139
+0x14101D11A TEST dword ptr [RAX+0x130],0x40000000
+0x14101D124 JZ  LAB_14101D12B
+0x14101D126 MOV EBX,R12D
+0x14101D129 JMP LAB_14101D139
+```
+
+Looyh's historic first patch replaces the four-byte
+`85 DB 75 2E` sequence with `31 DB 90 90`,
+thus **zeroing EBX** and eliminating the
+`JNZ` branch. This resets/reevaluates the
+resource-path state; it is **not** simply a
+hard-coded photo=true decision. Subsequent
+instructions may still set EBX nonzero.
+
+The user's complete decompilation contains decisive
+concrete portrait-resource links in the code downstream
+of this branch:
+
+```cpp
+if (iVar24 == 0) {
+  lVar20 = FUN_141d3fdb0(uVar19,0xe0,0,0,
+                          CONCAT44(uVar15,0x7ecfdfbb));
+  ...
+  FUN_141d46ee0(unaff_RBP+0xe,0x100,
+                 L"PORTRAIT_CONTEXT_{0:x16}",
+                 unaff_RBP+0xb);
+  uVar15 = FUN_141db4cc0(unaff_RBP+0xe,0x7ffffffe);
+  FUN_140fce570(unaff_RBP+0xe,0x100);
+  FUN_14174b5c0(&PTR_PTR_143ac9eb0,
+                 *(undefined8 *)(unaff_RSI+0x48),
+                 uVar15,unaff_RBP+0xe,
+                 *(undefined1 *)(unaff_R14+8));
+  return;
+}
+```
+
+Else-path includes additional model/object construction
+and `FUN_140ffd310/FUN_140ffd480/FUN_140ffd1b0`
+calls. The function is large; the truncated decompiler
+cannot establish precise input semantics or fallback.
+
+**Critical:** the exact `PORTRAIT_CONTEXT_{0:x16}`
+wide string is now an independently justified
+semantic search anchor for the NBA2K26.exe
+image-resource subsystem. Search first for the
+UTF-16LE prefix `PORTRAIT_CONTEXT` (HEX):
+`50 00 4F 00 52 00 54 00 52 00 41 00 49 00 54 00 5F 00 43 00 4F 00 4E 00 54 00 45 00 58 00 54 00`.
+One targeted Ghidra search; inspect cross-references if
+present. Do NOT patch 2K26 or ask for more byte-signature
+searches unless independently corroborated.
