@@ -67,6 +67,13 @@ Immediately preceding these instructions, code loads from
 and stores `RBP` into `[RBX + 0x70]`. After the comparison the
 branch targets code that reads `[RBX + 0xD8]`.
 
+**Important stronger observation:** The earlier function-prologue
+screenshot shows `XOR EBP, EBP` at `0x14163A57E`, which zeroes RBP.
+Unless RBP is reassigned in the intervening instructions (not yet
+verified), this `CMP [RBX+0xD8], RBP` is a **null/zero test**,
+not a comparison of two team IDs. This considerably weakens the
+candidate as photo-team eligibility logic.
+
 **Interpretation:** This is **consistent with a generic object
 field-change notification/transfer path**, not direct evidence of
 comparing `CURRENTTEAM` against `PORTRAITTEAM1/2`. Both operands in
