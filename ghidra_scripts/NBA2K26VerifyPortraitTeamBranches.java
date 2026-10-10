@@ -41,7 +41,9 @@ public class NBA2K26VerifyPortraitTeamBranches extends GhidraScript {
                 (shortJz && targetMatches && indexedMatches ? "YES" : "NO"));
         if (shortJz && targetMatches && indexedMatches && label.startsWith("TEAM")) {
             println("   HYPOTHETICAL one-byte JZ->JMP edit (NOT APPLIED): 74 -> EB");
-            println("   Original missing/invalid team sentinel branches MUST remain unchanged.");
+            println("   CAUTION: JZ for request ID -1 stays, but a NULL team reference");
+            println("   also yields identifier -1. Forcing a team-match branch can therefore");
+            println("   bypass some missing-resource fallback decisions. NOT a safe patch yet.");
         }
     }
 
