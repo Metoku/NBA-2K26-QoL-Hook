@@ -412,16 +412,16 @@ void FUN_140744910(longlong param_1,longlong param_2) {
     int iVar2;
     iVar2 = *(int *)(*(longlong *)(param_1 + 0x30) + 0x1c);
     iVar1 = FUN_141fe3a90(10, *(undefined4 *)(param_2 + 0x18));
-    if (iVar1 != 0) {
+    if (iVar1 == 0) {
         iVar1 = FUN_141fe3a90(11, *(undefined4 *)(param_2 + 0x18));
         if (iVar1 != 0) {
             if (iVar2 == 2) iVar2 = 0;
-            else iVar2 = iVar2 + -1;
+            else iVar2 = iVar2 + 1;
         }
     } else if (iVar2 == 0) {
         iVar2 = 2;
     } else {
-        iVar2 = iVar2 + -1;
+        iVar2 = iVar2 - 1;
     }
     if (*(int *)(*(longlong *)(param_1 + 0x30) + 0x1c) != iVar2) {
         *(int *)(*(longlong *)(param_1 + 0x30) + 0x1c) = iVar2;
