@@ -180,3 +180,43 @@ Stack tab for a distinct game-module callsite. If that stack is
 similarly shallow/generic, end this ProcMon stack approach and
 pivot to image-asset name construction, asset-request APIs or
 MyNBA UI code. Do not demand repeated identical captures.
+
+## User-provided CreateFile stack closes ProcMon investigation
+
+A later screenshot of the successful mod IFF `CreateFile` event shows:
+
+```
+U 10 ntdll.dll      NtCreateFile + 0x14
+U 11 KERNELBASE.dll GetDriveTypeW + 0xE57
+U 12 KERNELBASE.dll CreateFileW + 0x97
+U 13 AcLayers.DLL   AcLayers.DLL + 0xD939
+U 14 NBA2K26.exe    ExportProductMetadata + 0x1E618DBD   0x174245BB2
+U 15 <unknown>      0x11F00BE4
+```
+
+The huge displacement from `ExportProductMetadata` is just an
+approximate symbolization label and **not** a photo-loader name.
+`AcLayers.dll` is a Windows compatibility layer between the
+application and the file API. The additional `NBA2K26.exe`
+frame is a file-create callsite; no evidence yet links it to
+action-photo selection or cyberface fallback.
+
+Combined with the confirmed `ReadFile` import callsite at
+`0x156733454`, this completes a limited objective: demonstrate
+that NBA2K26.exe accesses a modded `chr_r*.iff` override
+using normal OS file APIs. **Do not pursue the generic file-I/O
+call stack further** unless separate evidence links it to photo
+asset resolution or identity. No working hook exists.
+
+### Next distinct hypothesis: asset naming and resolution
+
+Use Ghidra's read-only memory/string search for literal identifiers
+`chr_r`, `_a1.iff`, `player_images`, and optionally
+`ActionShotTeam`. A result with disassembled code cross references
+could point at a resource-name builder; a match by itself is not
+proof of the requested filename or asset selection.
+
+**Stop after a bounded manual string search if there are no matches.**
+The game may construct asset names dynamically or resolve from
+packed archives; absence of a literal is inconclusive. Do not
+start another 1.1 GB field-offset scan.
