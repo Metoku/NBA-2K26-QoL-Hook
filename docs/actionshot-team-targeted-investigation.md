@@ -116,3 +116,47 @@ function surrounding `0x142291BC8` and its real caller
 to determine whether the apparent `PortraitTeamId`
 transfer belongs to the MyNBA player UI. Stop this lead
 if it proves to be data-validation only. No full EXE scans.
+
+## Screenshot validation: PortraitTeamId site at 0x142291BB5
+
+User provided Ghidra Listing around `0x142291BB5` through
+`0x142291C01`. The Decompiler states **No Function**, because
+the project has not defined an encompassing function. This does
+not imply invalid machine code and is not by itself a reason to
+create a function at an arbitrary interior address.
+
+The directly displayed instructions include:
+
+```asm
+0x142291BB5  MOV RCX,qword ptr [RAX+0x140]
+0x142291BBC  MOV RAX,qword ptr [RCX+0xB8]
+0x142291BC3  TEST RAX,RAX
+0x142291BC6  JZ LAB_142291BD1
+0x142291BC8  MOVZX ECX,word ptr [RAX+0x1008]
+0x142291BCF  JMP LAB_142291BD3
+0x142291BD1  MOV ECX,EBX
+0x142291BD3  TEST ECX,ECX
+0x142291BD5  MOV EAX,ESI
+0x142291BD7  CMOVNZ EAX,ECX
+0x142291BDA  CMP EAX,EBX
+0x142291BDC  CMOVC EBX,EAX
+0x142291BDF  MOVZX EAX,BX
+0x142291BE3  MOV word ptr [RDI+0x1B1C],BX
+0x142291BEA  CMP EAX,ECX
+```
+
+This validates that the earlier raw hex was genuine code for
+a 16-bit value transfer with conditional selection and a
+write to another object, adjacent to `PortraitTeamId`
+diagnostics. The storage semantics and caller remain
+undetermined. It is **not** evidence of action-photo asset
+selection, team eligibility, or the fallback-to-cyberface
+branch.
+
+**Decision:** close the `ActionShotTeam`/diagnostic-string
+branch as insufficient for a hook. Do not ask the user to
+manually force function creation, alter Ghidra data,
+modify the EXE, or inspect more neighboring instructions
+without independent player-photo runtime evidence.
+
+No verified MyNBA portrait-selection function has yet been found.
