@@ -68,3 +68,32 @@ code ownership, not filenames or player field offsets.
 The requested mod still requires an actual, verified selection
 function. Its C++ DLL remains an inert skeleton. Do not inject,
 bypass game protection or edit important MyNBA saves.
+
+## User's Ghidra screenshot — first table reference verified
+
+The user navigated to the proposed reference in the exact imported
+build. The Listing directly shows these instructions:
+
+```asm
+0x1407429E4  CALL FUN_14334ABD0
+0x1407429E9  TEST RAX,RAX
+0x1407429EC  JZ LAB_140742A0E
+0x1407429EE  LEA RCX,[PTR_LAB_143ECCA80]
+```
+
+This confirms the earlier static report's *location of the table
+reference*, but it does **not** confirm a MyNBA portrait selector.
+The highlighted `LEA` loads a table-related address into RCX;
+its meaning depends on subsequent instructions and caller context.
+The existing Decompiler pane was stale, showing
+`UndefinedFunction_156733454` from the previous generic
+`ReadFile` investigation, so do not interpret its pseudocode
+as belonging to this code region.
+
+**One next bounded screenshot:** navigate to `0x140742A20`
+and show Listing instructions on both sides, ideally including
+the region `0x1407429EE` to `0x140742A4A`. This also covers
+the second independently observed table reference. Focus on
+whether the LEA address gets written into a new object, and
+whether there are nearby identifying calls/strings. Do not
+guess a function entry or create a patch from this reference.
