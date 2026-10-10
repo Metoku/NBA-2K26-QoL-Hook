@@ -985,3 +985,15 @@ which checks the actual 2-byte raw opcodes, their
 targets, and separately verifies the two earlier
 invalid-ID sentinel branches remain visible.
 Script writes NO modifications to Ghidra/game.
+
+**Safety refinement:** The existing `ECX == -1` jumps protect
+an explicitly invalid *request* ID, but a null
+`[R9+0xD0]` or `[R9+0xD8]` reference is separately
+converted into `R8D/EAX=0xFFFFFFFF`. If the request ID
+is otherwise valid, unconditional JZ->JMP would bypass
+the resulting mismatch and potentially remove its
+fallback behavior. Therefore, two raw short-branch edits
+are a diagnostic hypothesis ONLY, not a production-safe
+portrait hook. Any implementation should retain null
+reference checks and establish image availability
+in addition to build fingerprint verification.
