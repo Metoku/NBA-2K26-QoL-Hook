@@ -47,6 +47,39 @@ Lower-ranked alternatives: `0x14CF9E100` also accesses
 `0x142A177D0` compares the three offsets through RAX,
 but could be generic object equality.
 
+
+## Follow-up user screenshot: function at `0x14163A560`
+
+After the user manually disassembled this address in Ghidra, the
+Listing showed a normal function prologue and a recurring pattern
+of field tests/updates. At `0x14163A89A`, the verified Listing
+instructions were:
+
+```asm
+CMP qword ptr [RBX + 0xD8], RBP
+JZ  LAB_14163A8D5
+MOV CL, 0x22
+CALL FUN_142A099E0
+```
+
+Immediately preceding these instructions, code loads from
+`[RBX + 0x70]`, conditionally performs an indirect virtual call,
+and stores `RBP` into `[RBX + 0x70]`. After the comparison the
+branch targets code that reads `[RBX + 0xD8]`.
+
+**Interpretation:** This is **consistent with a generic object
+field-change notification/transfer path**, not direct evidence of
+comparing `CURRENTTEAM` against `PORTRAITTEAM1/2`. Both operands in
+the key CMP are **a field and the RBP register**, not the current-team
+field; no image request or cyberface branch is visible in the
+supplied Listing window. Without confirming the object identity and
+callers, avoid assigning DB2K player-data semantics to these offsets.
+
+**Decision:** Do not implement a hook at this CMP or assume
+`FUN_142A099E0` selects a portrait. Stop broad field-offset
+scanning and shift to a caller/resource-selection path with
+actual UI/asset-resolution evidence.
+
 ## Engineering status
 
 **No known image-selection function, validated eligibility branch,
