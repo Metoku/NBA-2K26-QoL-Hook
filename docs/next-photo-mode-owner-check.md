@@ -484,3 +484,38 @@ with a concrete MyNBA-specific trace.
 This is **one bounded viability check**, not a prediction
 that the hook is close. A DLL with six policy tests still
 lacks its NBA2K26 game integration.
+
+## Screenshot at 0x140765D40 — fixed-value writer, not selector
+
+The user navigated to the next hypothesized photo-mode
+table method. The Listing still shows `??` data at
+`0x140765D40` and the Decompiler is **stale**, displaying
+`FUN_140744910`. Raw bytes visible at this location
+(from the user's screenshot) are:
+
+```text
+0x140765D40: C7 02 E7 11 51 CF 48 8B C2 C3
+```
+
+Decoded as x64 from this apparent entry point:
+
+```asm
+0x140765D40  MOV dword ptr [RDX],0xCF5111E7
+0x140765D46  MOV RAX,RDX
+0x140765D49  RET
+```
+
+The preceding region terminates with `RET` and several
+`CC` bytes, consistent with independent small function
+entry. This is a *constant/output-storage helper*, not
+evidence of a photo resource selector. The sibling method
+`0x140765D60` has **not** been inspected but there
+is no reason to assume it is a renderer.
+
+**Decision:** stop examining the photo-mode table
+methods for the MyNBA portrait hook unless another source
+independently links this UI-setting subsystem to player
+image selection. No patch at any of these addresses.
+The confirmed setting-change handler `0x140744910`
+and fixed-value writer `0x140765D40` are not the
+missing portrait-selection function.
