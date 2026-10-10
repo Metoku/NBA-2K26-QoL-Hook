@@ -68,3 +68,51 @@ game or save changes.
 
 Until the actual decision is verified and in-game tested,
 the DLL is **not a working portrait mod**.
+
+## User-provided report: first bounded ActionShotTeam check
+
+The user successfully ran the SHA-verified script and uploaded
+`actionteamprobe.txt` on 2026-10-10.
+
+### Confirmed
+
+- Two `ActionShotTeam` strings exist at
+  `0x143D63BA5` and `0x144C81101`, each directly adjacent to
+  `PortraitTeam`, `TEAMDATA` and `PLAYERSTATDATA`
+  metadata strings.
+- The partial Ghidra project has no indexed references to
+  those string addresses. This is **inconclusive** because
+  the imported EXE was not auto-analyzed in full.
+- Separate `PortraitTeamId` diagnostics exist around
+  `0x1450F5260` (wide-string text beginning
+  `PortraitTeamId over/underflow...`) and
+  `0x1450F531B` (`PortraitTeamId() == x` fragment).
+- Two previously discovered nearby code/string references,
+  `0x141F397EE` and `0x142291B81`, both load the wide
+  `PortraitTeamId over/underflow` diagnostic text.
+  Both are embedded in code constructing parameter/diagnostic
+  messages; they are **not** evidence of an action-photo vs
+  cyberface selector.
+- The raw code window around `0x142291B81` includes a
+  16-bit read from `[RAX+0x1008]` near
+  `0x142291BC8` and a 16-bit store to
+  `[RDI+0x1B1C]` near `0x142291BE3`.
+  This may represent copying/validating a
+  `PortraitTeamId` into another object, but these
+  object layouts and the surrounding routine are **unverified**.
+  It does not imply a hookable photo-selection decision.
+
+### Assessment
+
+The earlier `ActionShotTeam` hypothesis is **not substantiated**
+by this report. The names are more consistent with
+player-data/schema serialization metadata than an active
+portrait-selection call. **Do not patch** the two diagnostic
+code sites or invent an `ActionShotTeam` offset.
+
+If continuing without a debugger, the only narrowly scoped
+next test worth considering is reading the actual Ghidra
+function surrounding `0x142291BC8` and its real caller
+to determine whether the apparent `PortraitTeamId`
+transfer belongs to the MyNBA player UI. Stop this lead
+if it proves to be data-validation only. No full EXE scans.
