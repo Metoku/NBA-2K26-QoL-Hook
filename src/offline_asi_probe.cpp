@@ -41,6 +41,10 @@ DWORD WINAPI ReportLoaded(LPVOID) {
 }
 }
 
+extern "C" __declspec(dllexport) const char* PortraitProbeVersion() {
+    return "0.1.0-noop-loader-test";
+}
+
 BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(module);
