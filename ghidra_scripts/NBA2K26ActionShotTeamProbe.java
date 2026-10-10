@@ -50,7 +50,13 @@ public class NBA2K26ActionShotTeamProbe extends GhidraScript {
 
     private void dumpBytes(Address address,int count) {
         byte[] buf=new byte[count];
-        int n=mem.getBytes(address,buf);
+        int n;
+        try {
+            n = mem.getBytes(address, buf);
+        } catch (ghidra.program.model.mem.MemoryAccessException ex) {
+            out.println("  Memory unavailable at " + address + ": " + ex.getMessage());
+            return;
+        }
         if(n<=0) {out.println("  Memory unavailable at "+address);return;}
         for(int i=0;i<n;i+=16) {
             StringBuilder line=new StringBuilder();
