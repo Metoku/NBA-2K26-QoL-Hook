@@ -152,3 +152,31 @@ instruction boundaries. If Ghidra cannot safely disassemble
 This is evidence of a generic Windows file-read caller—not yet
 proof of *who requested* the action portrait or how team-based
 cyberface fallback is chosen. **Do not patch this callsite**.
+
+## Confirmed Ghidra disassembly of the ProcMon ReadFile callsite
+
+The user disassembled `0x156733454` in Ghidra for the fingerprinted
+NBA2K26.exe import. The Listing resolves it directly as:
+
+```asm
+0x156733454  CALL qword ptr [->KERNEL32.DLL::ReadFile]
+0x15673345A  JMP LAB_156733460
+```
+
+This confirms that the ProcMon `NBA2K26.exe` stack frame at
+`0x15673345A` is consistent with the **return address** following a
+Windows `ReadFile` call inside the game executable. The game
+module address has been validated by its actual imported function
+reference, not by the approximate `ExportProductMetadata` symbol.
+
+**Decision:** This is a real I/O callsite but is generic and not
+the action-portrait-versus-cyberface selection branch. Avoid
+patching/hooking this `ReadFile` call. Do not interpret the callsite
+as a photo-specific asset handler.
+
+**Single next observation:** use Process Monitor's **CreateFile**
+event for the same `chr_r9809_a1.iff` override and inspect its
+Stack tab for a distinct game-module callsite. If that stack is
+similarly shallow/generic, end this ProcMon stack approach and
+pivot to image-asset name construction, asset-request APIs or
+MyNBA UI code. Do not demand repeated identical captures.
