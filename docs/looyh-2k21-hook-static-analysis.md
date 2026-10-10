@@ -917,3 +917,71 @@ which `MOV/CMP/Jcc` specifically implements
 `param_2[0x0e]` vs `teamRef+0x1008`.
 Do not patch selector unconditionally: it would bypass
 other resource and content-state guards.
+
+## 2026-10-11: exact NBA 2K26 team-mismatch branches from Ghidra report
+
+User ran `NBA2K26PortraitSubtypeZeroTrace.java` successfully; 93
+instructions, 17 conditional branches. High-confidence decision chain:
+
+```asm
+0x1425F6D8B MOV    R9,[R14+0x20]
+0x1425F6D8F MOV    RAX,[R9+0xD0]
+0x1425F6D96 TEST   RAX,RAX
+0x1425F6D99 JZ     0x1425F6DA5
+0x1425F6D9B MOVZX  R8D,word ptr [RAX+0x1008]
+0x1425F6DA5 MOV    R8D,0xFFFFFFFF   ; null sentinel
+0x1425F6DAB CMP    dword ptr [R14+0x30],EBX
+0x1425F6DAF JZ     0x1425F6DF2
+0x1425F6DB1 MOV    ECX,[R14+0x38]  ; request identifier
+0x1425F6DB5 CMP    ECX,-1
+0x1425F6DB8 JZ     0x1425F6DBF    ; explicit invalid sentinel
+0x1425F6DBA CMP    ECX,R8D
+0x1425F6DBD JZ     0x1425F6DC2   ; team match branch 1
+0x1425F6DBF MOV    EBX,R13D       ; selector=1 on mismatch/sentinel
+0x1425F6DCC MOV    RAX,[R9+0xD8] ; subtype-dependent second ref
+0x1425F6DD8 MOVZX  EAX,word ptr [RAX+0x1008]
+0x1425F6DE6 CMP    ECX,-1
+0x1425F6DE9 JZ     0x1425F6DEF    ; explicit invalid sentinel
+0x1425F6DEB CMP    ECX,EAX
+0x1425F6DED JZ     0x1425F6DF2   ; team match branch 2
+0x1425F6DEF MOV    EBX,R13D       ; selector=1 on mismatch/sentinel
+0x1425F6DF2 MOV    RAX,[R14+0x28]
+0x1425F6DFF CMP    qword ptr [RAX],R12
+0x1425F6E04 MOV    EBX,R13D
+0x1425F6E09 TEST   dword ptr [RAX+0x164],0x40000000
+0x1425F6E13 CMOVNZ EBX,R13D
+0x1425F6E17 CMP    dword ptr [R14+0x34],R12D
+0x1425F6E1B JNZ    0x1425F6F3F
+0x1425F6E21 TEST   EBX,EBX
+0x1425F6E23 JNZ    0x1425F69DA
+0x1425F6E29 MOV    RCX,R14
+0x1425F6E2C CALL   0x1425D9F50
+0x1425F6E31 TEST   EAX,EAX
+0x1425F6E33 JNZ    0x1425F69DA
+0x1425F6E40 MOV    EBX,R13D       ; helper failure sets fallback
+```
+
+At `0x1425F69E1` the `TEST EBX,EBX` /
+`JNZ 0x1425F6F46` skips `PORTRAIT_CONTEXT`
+construction for EBX!=0. The two match branches above
+are uniquely appealing because making each unconditional
+could prevent **only team-ID mismatch** from setting
+the fallback selector, while leaving invalid-ID sentinel
+branches, other object flags, helper validation and
+normal fallback branches intact.
+
+Hypothesis to check (NOT APPLIED):
+`0x1425F6DBD` and `0x1425F6DED` are each a
+**2-byte short JZ** `74 03`, and converting ONLY
+the opcode `74 -> EB` would unconditionally skip
+the adjacent mismatch-set `MOV EBX,R13D`. Do not
+patch yet; raw original bytes and instruction lengths
+must be verified separately, along with whether this
+makes the desired action portraits load in offline MyNBA.
+
+Added read-only verification script
+`ghidra_scripts/NBA2K26VerifyPortraitTeamBranches.java`
+which checks the actual 2-byte raw opcodes, their
+targets, and separately verifies the two earlier
+invalid-ID sentinel branches remain visible.
+Script writes NO modifications to Ghidra/game.
