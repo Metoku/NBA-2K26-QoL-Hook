@@ -110,3 +110,38 @@ The next investigation should examine real action-portrait resource
 identifiers and requests, with read-only analysis first. An image
 replacement feature in an external mod is not itself proof that the
 game's automatic after-trade fallback is patchable at any known address.
+
+
+## User-observed MyNBA portrait behavior (2026-10-10)
+
+The user confirmed an important **in-game behavior**: a player's real
+action photograph displays when the player is assigned to their
+previous-season/original photo-associated team, while a player traded
+away from that team is shown as an **in-game rendered cyberface** instead.
+
+This is **not** a static-analysis proof of a hard-coded comparison
+between `CURRENTTEAM` and `ActionShotTeam`. It is strong behavioral
+evidence that team assignment, or the availability of a team-specific
+action-photo asset, affects the **action-portrait eligibility/fallback**.
+Headshots continue working in the traded state.
+
+Procmon also showed a successful `CreateFile` / `ReadFile` sequence
+for an **installed mod override**, `mods/player_images/chr_r9809_a1.iff`.
+Its player identity and its relationship to the traded-player case
+were not established; original in-game action-photo assets could also
+be packed or cached. Absence of per-player file reads does not show
+absence of asset requests inside the game.
+
+**Revised next engineering target:** identify the MyNBA action-portrait
+selection decision and its data inputs: action-shot asset identifier,
+the photo-associated team, and player's active/current team; establish
+whether the fallback is a deliberate eligibility check or missing
+team-specific asset. Focus on a verified, read-only resource-choice
+path or team-based branch, **not** more generic `ActionShotId` field
+getters/setters. No patch addresses or hooks are validated yet.
+
+A future offline hook (only if permitted and safe) should ideally
+modify the action-photo eligibility/selection decision while retaining
+unmodified player IDs and save data, scoped to the exact game build;
+it should fail closed outside its verified conditions. The DLL is
+still a skeleton. Do not install it.
