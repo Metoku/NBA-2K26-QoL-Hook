@@ -76,3 +76,40 @@ team-based real-photo vs cyberface selection behavior.
 
 Keep the DLL skeleton **uninstalled**. No live injection, game edits,
 anti-cheat interference, or important-save modification.
+
+## User-provided initial ProcMon stack (2026-10-10)
+
+The user shared a cropped ProcMon stack containing these **user-mode**
+frames for the examined file-operation event:
+
+```
+U 12  NBA2K26.exe  ExportProductMetadata + 0xB06665  0x15673345A
+U 13  <unknown>     0xD69AB                       0xD69AB
+```
+
+The numeric address `0x15673345A` is a **runtime address**, not
+the static Ghidra address. `ExportProductMetadata + 0xB06665`
+is how ProcMon's available symbols identified the address; the
+large displacement does **not** establish that the named export
+directly performs portrait loading.
+
+Next, locate the *exact same* `ExportProductMetadata` symbol in
+Ghidra's Symbol Tree, record its **static image virtual address**,
+and compute `static symbol address + 0xB06665`. Verify this
+lands inside a mapped executable region with real disassembly.
+This can avoid needing a separate runtime module-base lookup,
+**but only if both tools resolve to the same exact named export.**
+
+Alternatively, if Process Explorer/ProcMon clearly supplies
+the game's runtime image base `B_runtime`, the mapping is
+`A_ghidra = 0x140000000 + (0x15673345A - B_runtime)`.
+Do not assume the runtime base from an aligned-looking guess.
+
+Call-stack entries typically indicate a return/callsite address
+inside a **generic file-open or read path**, not a verified
+`ActionShotId` consumer, eligibility condition or hook target.
+The `<unknown>` frame is currently uninterpretable. A complete
+stack and whether the recorded event was `CreateFile` or
+`ReadFile` would help assess this lead.
+
+No patch or hook is authorized by this trace.
