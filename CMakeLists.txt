@@ -5,7 +5,8 @@ if(NOT WIN32)
   message(FATAL_ERROR "This project targets Windows only.")
 endif()
 
-add_library(NBA2K26QoLHook SHARED src/main.cpp)
+add_library(NBA2K26QoLHook SHARED src/main.cpp src/PortraitPolicy.cpp)
+target_include_directories(NBA2K26QoLHook PRIVATE include)
 target_compile_features(NBA2K26QoLHook PRIVATE cxx_std_17)
 target_compile_definitions(NBA2K26QoLHook PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 set_target_properties(NBA2K26QoLHook PROPERTIES
@@ -19,4 +20,9 @@ if(BUILD_TESTING)
   target_compile_features(DllSmokeTest PRIVATE cxx_std_17)
   add_test(NAME DllSmokeTest
     COMMAND DllSmokeTest "$<TARGET_FILE:NBA2K26QoLHook>")
+
+  add_executable(PortraitPolicyTest tests/portrait_policy_test.cpp src/PortraitPolicy.cpp)
+  target_include_directories(PortraitPolicyTest PRIVATE include)
+  target_compile_features(PortraitPolicyTest PRIVATE cxx_std_17)
+  add_test(NAME PortraitPolicyTest COMMAND PortraitPolicyTest)
 endif()
