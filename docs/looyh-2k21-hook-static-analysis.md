@@ -496,3 +496,50 @@ screenshot including the new instructions before
 to patch NBA2K26. If the partial function persists,
 inspect raw Listing and fix function boundaries only
 after observing a valid enclosing start.
+
+## CRITICAL 2K21 Ghidra discovery: original second Looyh patch reaches an IFF filename template
+
+The user disassembled the instruction predecessor at
+`0x140FCE5F4` in their **Epic NBA2K21.exe** and provided
+the resulting Listing/Decompiler screenshot. This resolves
+the formerly undefined compare + branch:
+
+```asm
+0x140FCE5F4  MOV RAX,qword ptr [RCX+0xC8]
+0x140FCE5FB  CMP qword ptr [RCX+0x60],RAX
+0x140FCE5FF  JNZ LAB_140FCE76E
+0x140FCE605  MOV R8D,dword ptr [RBP+0x30]
+...
+0x140FCE63A  LEA R8,[u_chr_r[0:d4]_a[1].iff]
+```
+
+**Major new clue:** the fallthrough after Looyh's second
+historical NOP target references the actual asset path
+template **`u_chr_r[0:d4]_a[1].iff`**. This resembles
+the `chr_r9809_a1.iff` player image assets independently
+observed in 2K26 ProcMon. The spelling and purpose of
+the `u_` prefix should be independently verified;
+do not equate it automatically to the original 2K26
+image selection resolver.
+
+This strongly links the historical patch to resource/
+asset-loading, and invalidates prematurely writing it
+off based on the structurally similar but unrelated
+**VCHTTP** match in NBA2K26.exe.
+
+**Tentative control-flow hypothesis:** the `JNZ` checks
+equality of two pointers or 64-bit fields at object
+offsets `+0x60` and `+0xC8`; NOP'ing the JNZ forces
+fallthrough into an IFF-related processing path even when
+these fields differ. This may explain the old
+`forcedisplayphotos` option, but the field semantics
+and safety/fallback are not yet known. The asset could be
+an image, scene, or other `u_chr_r` type.
+
+**One next bounded inspection:** open Ghidra NBA2K21.exe
+at **`0x140FCE76E`**, the `JNZ` destination; show
+15 instructions before/20 after (Decompiler if useful).
+Determine what processing is skipped and whether another
+resource path is selected. No patching and no need for
+additional 2K26 byte-pattern searches until the original
+2021 logic is understood.
