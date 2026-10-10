@@ -871,3 +871,49 @@ patching code. Use the visible byte sequence and any valid predecessor
 branch to establish the correct enclosing function/CFG. If needed,
 determine the containing runtime-function boundary using 64-bit PE unwind
 metadata before disassembling a larger region.
+
+## 2026-10-11: full 2K26 portrait renderer function recovered and gate probe added
+
+The user disassembled the true entry of `FUN_1425F6930`, then
+uploaded all ~1,237 lines of pseudocode with signature:
+`void FUN_1425f6930(longlong param_1,int *param_2,longlong param_3)`.
+
+High-confidence structural observations:
+- `param_2[0]` at byte offset `+0x00` is a kind selector.
+- `param_2[1]` at `+0x04` is another subkind/state selector.
+- `*(longlong *)(param_2+8)` at `+0x20` points to
+  a data object with two optional reference pointers at
+  offsets `+0xD0` and `+0xD8`.
+- Each reference, if non-null, supplies a 16-bit identifier
+  at offset `+0x1008`; its interpretation as team ID
+  remains a hypothesis, not yet runtime validated.
+- `param_2[0x0e]` at `+0x38` is compared with the
+  identifier(s), conditioned on flag `param_2[0xc]`
+  at `+0x30`. If zero sentinel `0xffffffff` or
+  mismatched, local `puVar21` is set to 1.
+- Other conditions may also set `puVar21`, including
+  checking `param_2+10` at `+0x28`, the bit
+  `0x40000000`, bypass flag at `+0x34`,
+  and `thunk_FUN_15342B9C0` return state.
+- At `LAB_1425F69DA`, `puVar21==0` follows the
+  `PORTRAIT_CONTEXT_{0:x16}` initialization via
+  `FUN_143357DD0`. When selector != 0, code uses
+  a separate rendering/object initialization path.
+- This suggests a team-dependent portrait selection gate
+  but **does not prove** loaded IFF availability or
+  normal fallback behavior.
+
+A dedicated, read-only Ghidra report script has been
+committed at
+`ghidra_scripts/NBA2K26PortraitGateControlFlow.java`.
+It reports the **already disassembled**
+instructions in `0x1425F6950..0x1425F6A40` and
+highlights branch targets in the Console. It checks
+the game's SHA and makes no modifications.
+
+**Next evidence:** run this script and share its console
+output. From confirmed instruction boundaries, isolate
+which `MOV/CMP/Jcc` specifically implements
+`param_2[0x0e]` vs `teamRef+0x1008`.
+Do not patch selector unconditionally: it would bypass
+other resource and content-state guards.
