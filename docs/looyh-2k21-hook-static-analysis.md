@@ -816,3 +816,58 @@ use a new method to identify the consumer of
 these string constants instead.
 
 No DLL hook or code patch verified yet.
+
+## Confirmed 2K26 portrait-context consumer: VA 0x1425F6A13
+
+The user ran the read-only Ghidra RIP-relative byte scan. It reported possible
+LEA instructions at `0x1425F6A13` and overlapping `0x1425F6A14`, targeting
+`0x145406FC0` (`PORTRAIT_CONTEXT_{0:x16}`).
+The user then disassembled the first location and supplied the full resulting
+Ghidra decompilation. **The first hit is confirmed as a real RIP-relative LEA**:
+
+```asm
+0x1425F6A13 LEA R8,[0x145406FC0]
+0x1425F6A1A MOV [RBP+0x98],RAX
+0x1425F6A21 MOV EDX,0x100
+0x1425F6A26 MOV [RBP+0x80],RSI
+0x1425F6A2D LEA RCX,[RSP+0x60]
+0x1425F6A32 CALL FUN_143357DD0
+0x1425F6A37 MOVZX R8D,R13B
+0x1425F6A3B LEA RCX,[RSP+0x60]
+0x1425F6A40 MOV EDX,0x7FFFFFFE
+0x1425F6A4C CALL FUN_143351030
+```
+
+Confirmed matching decompilation:
+
+```cpp
+FUN_143357dd0(&stack0x00000060,0x100,&UNK_145406fc0);
+puVar1 = (undefined4 *)(unaff_R14 + 0x178);
+uVar5 = FUN_143351030(&stack0x00000060,0x7ffffffe,unaff_R13 & 0xff);
+*puVar1 = uVar5;
+thunk_FUN_15342fc50(&stack0x00000060,0x100);
+...
+lVar7 = FUN_14058c960(0xe0,*(undefined1 *)(unaff_R15+8),0,0x8db85bd5,...);
+...
+iVar6 = thunk_FUN_153ddef00(0x146fe4350,unaff_RBP+0x280,0,0x8db85bd5,...);
+```
+
+The symbol is a genuine operand reference for the portrait-context resource,
+not a false-positive byte match. The decompiler labels its entry
+`UndefinedFunction_1425f6a13`, **but this starts at a call-argument setup
+inside a larger routine**: the decompilation has multiple `unaff_` registers,
+so it cannot yet describe the gating condition or whole function.
+
+The validated NBA2K21 first original patch also chooses the
+`PORTRAIT_CONTEXT` allocation path. The 2K26 code is plausibly its
+semantic descendant, though internal helpers and structures differ.
+A safe hook cannot be placed until the *preceding branch* and current
+image availability/fallback are identified.
+
+Next bounded read-only evidence: get a Ghidra Listing screenshot of the
+**raw bytes immediately preceding** `0x1425F6A13`, ideally beginning
+near `0x1425F69C0`, WITHOUT guessing an instruction start or manually
+patching code. Use the visible byte sequence and any valid predecessor
+branch to establish the correct enclosing function/CFG. If needed,
+determine the containing runtime-function boundary using 64-bit PE unwind
+metadata before disassembling a larger region.
