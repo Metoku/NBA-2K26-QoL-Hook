@@ -72,6 +72,19 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\portrait_string
 This reports file offsets of text matches, **not** a working portrait hook or
 game-memory addresses. The existing DLL still does not modify NBA 2K26.
 
+## Player-photo ID/Team field investigation (Ghidra)
+
+The next analysis step is to investigate photo ID/team fields rather than
+the arena photo-mode *label formatting* functions. A new
+[read-only Ghidra Java script](ghidra_scripts/NBA2K26PlayerPhotoFieldTrace.java)
+collects relevant `PhotoId`, `ActionShotId`, `PortraitTeam`, and
+`ActionShotTeam` text locations, candidate static references, and
+small code excerpts into one report.
+
+See [step-by-step run instructions](docs/ghidra-player-photo-field-trace.md).
+The script runs inside Ghidra without separate Python or PowerShell tools.
+It does **not** establish a working portrait fix or modify game files.
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
