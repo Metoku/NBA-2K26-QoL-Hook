@@ -154,3 +154,44 @@ test than the common `TEST/Jcc` pattern. No byte patch,
 no runtime attachment. If zero matches, stop treating
 historic signatures as directly reusable and seek a
 semantic image-selection function instead.
+
+## 2K26 wildcard hit: ONE candidate for Looyh's second patch signature
+
+User ran Ghidra Hex Search for
+`0F 85 ?? ?? ?? ?? 44 8B 45 30 48 8D`
+on the exact fingerprinted NBA2K26.exe import and received
+**exactly one match**:
+
+- **VA:** `0x14347E3F7`; **RVA:** `0x347E3F7`
+- **Observed bytes:** `0F 85 E2 01 00 00 44 8B 45 30 48 8D`
+- Looyh NBA2K21 v0.0.5 original pattern:
+  `0F 85 69 01 00 00 44 8B 45 30 48 8D`.
+- The conditional branch displacement is different:
+  original relative offset `0x169`; 2K26 candidate offset
+  `0x1E2`. The following 6 bytes match.
+- The presumed jump starts at `0x14347E3F7`,
+  so its **fall-through** is `0x14347E3FD`, and
+  its computed **branch target** is `0x14347E5DF`
+  (`0x14347E3FD + 0x1E2`) if it is a genuine
+  instruction boundary. These are static hypotheses
+  until the code is disassembled in Ghidra.
+
+This single exact-surroundings hit is a **distinctive lead**,
+but its correspondence to an actual NBA2K26 MyNBA action
+photo eligibility check is **not yet proven**. The
+old NBA2K21 patch NOPs out this kind of conditional
+branch. Do **not** patch the 2K26 match: skipping
+the branch could disrupt image-existence fallback,
+player cards or unrelated code.
+
+**Next one bounded Ghidra screenshot:** double-click
+result `0x14347E3F7`, or G → `14347E3F7`.
+Disassemble with D only if undefined and at known
+instruction boundary. Show ~15–20 Listing instructions
+before and after and the correct function's Decompiler
+if available. The first objective is to determine what
+condition sets the ZF for the `JNZ`, what happens at
+fall-through `0x14347E3FD`, and what is located at
+branch target `0x14347E5DF`. Request target-region
+screenshot only if the first one contains useful
+photo-specific evidence.
