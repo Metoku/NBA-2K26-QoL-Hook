@@ -72,6 +72,24 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\portrait_string
 This reports file offsets of text matches, **not** a working portrait hook or
 game-memory addresses. The existing DLL still does not modify NBA 2K26.
 
+## Action-shot-only function investigation
+
+The current research scope is **full-body real action portraits disappearing
+when a player is traded in offline MyNBA**. Regular headshots continue
+displaying correctly; the action-shot and team-eligibility decision
+remains unverified.
+
+The new [Ghidra ActionShot Function Trace script](ghidra_scripts/NBA2K26ActionShotFunctionTrace.java)
+uses x64 PE unwind metadata to locate real function fragment boundaries for
+known `ActionShotId` field references and optionally decompile a few
+small containing functions. Unlike earlier scans, it does not search the
+entire executable for field names.
+
+See [the one-run instructions](docs/ghidra-action-shot-function-trace.md).
+This investigation may add functions/disassembly **to the Ghidra project
+database only**; it does not patch the game executable, modify a MyNBA
+save or install the QoL DLL.
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
