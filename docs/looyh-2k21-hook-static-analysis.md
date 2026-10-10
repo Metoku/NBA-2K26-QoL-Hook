@@ -195,3 +195,62 @@ fall-through `0x14347E3FD`, and what is located at
 branch target `0x14347E5DF`. Request target-region
 screenshot only if the first one contains useful
 photo-specific evidence.
+
+## Ghidra disassembly of unique NBA 2K26 match
+
+The user's screenshot validates the unique relaxed-signature hit
+`0x14347E3F7` as a **genuine instruction boundary**.
+The Decompiler now displays a partial function
+`UndefinedFunction_14347E3B0` but no portrait-specific
+symbol has been found.
+
+Directly visible relevant Listing:
+
+```asm
+0x14347E3D0  CMP   ECX,0x504521A8
+0x14347E3D6  JNZ   LAB_14347E3EC
+0x14347E3D8  MOV   RCX,[RBX+0x8]
+0x14347E3DC  CALL  thunk_FUN_154404530
+0x14347E3E1  CMP   EAX,0xC8
+0x14347E3E6  JZ    LAB_14347E5DF
+0x14347E3EC  MOV   RCX,[RBX+0x8]
+0x14347E3F0  CALL  thunk_FUN_15442DC90
+0x14347E3F5  TEST  EAX,EAX
+0x14347E3F7  JNZ   LAB_14347E5DF
+0x14347E3FD  MOV   R8D,[RBP+0x30]
+0x14347E401  LEA   RDX,[RSP+0x50]
+0x14347E406  MOV   RCX,[RBX+0x8]
+0x14347E40A  CALL  FUN_143396C30
+0x14347E40F  MOV   RCX,[RBX+0x8]
+0x14347E413  CMP   dword ptr [RCX+0x114],R15D
+0x14347E41A  JZ    LAB_14347E5DF
+0x14347E420  CMP   dword ptr [RBX+0x38],R15D
+0x14347E424  JZ    LAB_14347E5DF
+```
+
+The condition whose conditional jump corresponds to the
+2021 NOP-style patch is specifically the return value of
+`thunk_FUN_15442DC90`. Other conditions—including a
+possible return `0xC8` and integer fields at `+0x114`
+and `+0x38`—can independently skip to the **same**
+`0x14347E5DF` target. A naked NOP patch to
+`0x14347E3F7` may have broader consequences and is
+**not justified** by the signature match.
+
+The code has not yet been linked to image rendering or
+player action photos. It may process a completely unrelated
+state machine, including object/error states.
+
+### One next bounded Ghidra screenshot
+
+**Navigate to `0x14347E5DF`** and capture the branch
+destination in the Listing, with 10–20 instructions before
+and after, and the matching Decompiler region if it is
+practical. Focus on what the branch skips and where the
+branches reconverge. Do **not** patch the EXE or inject any
+DLL; the purpose is classification before proposing code.
+
+If the destination belongs to unrelated state handling,
+stop this candidate. If the destination references
+player portrait assets/eligibility, trace the check helper
+next, still in static Ghidra.
