@@ -75,3 +75,34 @@ Before authoring a live patch, evidence must establish:
 
 **Release gate:** Do not describe the current DLL as fixing
 NBA 2K26 until an actual in-game A/B test confirms it.
+
+## 2026-10-10: Avoid duplicate ProcMon test
+
+The user already completed ProcMon investigation, including
+a SUCCESS `ReadFile` for a loose portrait-mod IFF and a
+game-side generic OS-I/O return address. That result did
+not link to the MyNBA action-photo-vs-cyberface selector.
+
+**Do not request another ProcMon capture**, another
+`ReadFile` breakpoint, the x64dbg attach procedure, edits
+to `PORTRAITTEAM1`, or more ungrounded neighboring setter
+functions. Those avenues have already been attempted and
+were either non-diagnostic or caused game crashes.
+
+External comparison: Looyh's closed-source NBA 2K21 Hook
+v0.0.5 included a real feature called "Force display photos",
+documented separately from its patched file loader and
+roster features:
+https://www.2kspecialist.net/2020/10/nba2k21-hook-v005-by-looyh-added-force.html
+This confirms historical engine precedent but supplies
+**no NBA 2K26 code location, compatibility or exposed API**.
+The older hook DLL has no validated or available source
+in this investigation.
+
+**Next new evidence worth seeking**: documented source,
+function signature or reverse-engineering notes from an
+existing photo-forcing hook, then a *specific, static*
+comparison with 2K26; alternately a genuine MyNBA
+consumer/eligibility branch identified independently of
+generic label, setter, serializer, and I/O code. Avoid
+requesting a new user-side task until we have such a lead.
