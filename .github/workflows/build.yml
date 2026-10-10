@@ -38,5 +38,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NBA2K26QoLHook-windows-x64
-          path: build/Release/NBA2K26QoLHook.dll
+          path: |
+            build/Release/NBA2K26QoLHook.dll
+            build/Release/NBA2K26PortraitProbe.asi
           if-no-files-found: error
