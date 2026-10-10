@@ -231,3 +231,33 @@ references or other evidence of ownership.
 
 **Not yet verified:** photo-eligibility check, asset
 resolver, MyNBA consumer, or patchable function.
+
+## Latest screenshot: owner function decompiled; actual code caller now visible
+
+The user successfully disassembled and decompiled
+`FUN_140742880` at `0x140742880`. The visible prologue
+copies a handful of dwords from the optional second parameter
+into the first parameter's object fields around `+0x30`.
+The function then initializes and registers small objects using
+`FUN_14334ABD0` and `FUN_14071A8E0`, consistent with
+the previously verified photo-style / photo-mode table installs.
+
+**Crucial additional clue:** Ghidra's existing xrefs to entry
+`FUN_140742880` have improved after disassembly. The Listing
+now shows a **code CALL reference from `0x14071D1EA`**,
+in addition to the data references `0x143ECCE28` and
+`0x155C7E844`. Earlier boundary-script output showed only
+the single DATA reference, so the new code xref is the
+first promising path toward the actual owning subsystem.
+
+**Next one-step inspection:** Navigate to `0x14071D1EA`
+in Ghidra and capture Listing instructions ~15–20 lines
+above/below the CALL, together with the containing
+Decompiler if available. We need to tell whether the
+caller belongs to arena/broadcast graphics versus a MyNBA
+player portrait widget. If arena-only, stop this lead rather
+than continuing endless constructor/table exploration.
+
+Still **no photo-versus-cyberface selection function or
+working C++ hook**. Research milestones cannot be
+translated to a reliable overall completion percentage.
