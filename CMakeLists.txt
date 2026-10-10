@@ -31,6 +31,10 @@ if(BUILD_TESTING)
   target_compile_features(DllSmokeTest PRIVATE cxx_std_17)
   add_test(NAME DllSmokeTest
     COMMAND DllSmokeTest "$<TARGET_FILE:NBA2K26QoLHook>")
+  add_executable(AsiProbeSmokeTest tests/asi_probe_smoke_test.cpp)
+  target_compile_features(AsiProbeSmokeTest PRIVATE cxx_std_17)
+  add_test(NAME AsiProbeSmokeTest
+    COMMAND AsiProbeSmokeTest "$<TARGET_FILE:NBA2K26PortraitProbe>")
   add_executable(PortraitGateValidationTest tests/portrait_gate_validation_test.cpp)
   target_compile_features(PortraitGateValidationTest PRIVATE cxx_std_17)
   add_test(NAME PortraitGateValidationTest COMMAND PortraitGateValidationTest)
