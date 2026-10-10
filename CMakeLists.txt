@@ -5,13 +5,31 @@ if(NOT WIN32)
   message(FATAL_ERROR "This project targets Windows only.")
 endif()
 
-add_library(NBA2K26QoLHook SHARED src/main.cpp src/PortraitPolicy.cpp)
+# Keep the pure portrait policy introduced on main, and restore the verified
+# read-only branch-inspection export required by DllSmokeTest on this branch.
+add_library(NBA2K26QoLHook SHARED
+  src/main.cpp
+  src/PortraitPolicy.cpp
+  src/portrait_gate_validation.cpp
+)
 target_include_directories(NBA2K26QoLHook PRIVATE include)
+target_link_libraries(NBA2K26QoLHook PRIVATE bcrypt)
 target_compile_features(NBA2K26QoLHook PRIVATE cxx_std_17)
 target_compile_definitions(NBA2K26QoLHook PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
 set_target_properties(NBA2K26QoLHook PROPERTIES
   OUTPUT_NAME "NBA2K26QoLHook"
   WINDOWS_EXPORT_ALL_SYMBOLS OFF
+)
+
+# Test loader initialization with a harmless ASI that never edits game memory.
+# Keep it separate from the main DLL.
+add_library(NBA2K26PortraitProbe SHARED src/offline_asi_probe.cpp)
+target_compile_features(NBA2K26PortraitProbe PRIVATE cxx_std_17)
+target_compile_definitions(NBA2K26PortraitProbe PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+set_target_properties(NBA2K26PortraitProbe PROPERTIES
+  PREFIX ""
+  SUFFIX ".asi"
+  OUTPUT_NAME "NBA2K26PortraitProbe"
 )
 
 include(CTest)
@@ -25,4 +43,13 @@ if(BUILD_TESTING)
   target_include_directories(PortraitPolicyTest PRIVATE include)
   target_compile_features(PortraitPolicyTest PRIVATE cxx_std_17)
   add_test(NAME PortraitPolicyTest COMMAND PortraitPolicyTest)
+
+  add_executable(PortraitGateValidationTest tests/portrait_gate_validation_test.cpp)
+  target_compile_features(PortraitGateValidationTest PRIVATE cxx_std_17)
+  add_test(NAME PortraitGateValidationTest COMMAND PortraitGateValidationTest)
+
+  add_executable(AsiProbeSmokeTest tests/asi_probe_smoke_test.cpp)
+  target_compile_features(AsiProbeSmokeTest PRIVATE cxx_std_17)
+  add_test(NAME AsiProbeSmokeTest
+    COMMAND AsiProbeSmokeTest "$<TARGET_FILE:NBA2K26PortraitProbe>")
 endif()
