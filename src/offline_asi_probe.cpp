@@ -30,10 +30,10 @@ DWORD WINAPI ReportLoaded(LPVOID) {
     if (file == INVALID_HANDLE_VALUE) return 5;
 
     static constexpr char message[] =
-        "NBA2K26PortraitProbe.asi loaded inside NBA2K26.exe.\\r\\n"
-        "PASS: native plugin loader worked for this session.\\r\\n"
-        "No portrait patch, render hook, memory writes, EAC interaction or save edits.\\r\\n"
-        "Use only the game's built-in offline-without-EAC Steam launch option.\\r\\n";
+        "NBA2K26PortraitProbe.asi loaded inside NBA2K26.exe.\r\n"
+        "PASS: native plugin loader worked for this session.\r\n"
+        "No portrait patch, render hook, memory writes, EAC interaction or save edits.\r\n"
+        "Use only the game's built-in offline-without-EAC Steam launch option.\r\n";
     DWORD written = 0;
     WriteFile(file, message, static_cast<DWORD>(sizeof(message) - 1), &written, nullptr);
     CloseHandle(file);
@@ -44,9 +44,17 @@ DWORD WINAPI ReportLoaded(LPVOID) {
 BOOL WINAPI DllMain(HMODULE module, DWORD reason, LPVOID) {
     if (reason == DLL_PROCESS_ATTACH) {
         DisableThreadLibraryCalls(module);
-        // Never wait for a thread while holding the loader lock.
-        HANDLE thread = CreateThread(nullptr, 0, ReportLoaded, nullptr, 0, nullptr);
-        if (thread) CloseHandle(thread);
+        wchar_t path[32768] = {};
+        DWORD n = GetModuleFileNameW(nullptr, path, 32768);
+        if (n > 0 && n < 32768) {
+            const wchar_t* leaf = wcsrchr(path, L'\\');
+            leaf = leaf ? leaf+1 : path;
+            if (_wcsicmp(leaf, L"NBA2K26.exe") == 0) {
+                // Never wait for a thread while holding the loader lock.
+                HANDLE thread = CreateThread(nullptr, 0, ReportLoaded, nullptr, 0, nullptr);
+                if (thread) CloseHandle(thread);
+            }
+        }
     }
     return TRUE;
 }
