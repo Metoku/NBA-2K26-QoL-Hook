@@ -85,3 +85,37 @@ It would **not** prove:
 Next stage after successful no-op probe: develop a separate, opt-in
 offline-only portrait test hook, preserving the team's null references
 and resource checks and recording matched game build hashes.
+
+## Diagnostic update after failed version.dll startup
+
+The user's NBA2K26.exe **launched again immediately after removing
+only the test copy of `version.dll`**. This strongly implicates the
+loader/proxy path, but does not distinguish loader incompatibility from
+a failure initializing the `.asi` plugin. No proof of a native-code
+loading mechanism in the game yet.
+
+The ASI probe has been corrected to export `InitializeASI`, the
+entry point documented by Ultimate ASI Loader, and **does not spawn
+a thread or write files from `DllMain`**. The loader documentation:
+https://github.com/ThirteenAG/Ultimate-ASI-Loader/blob/master/readme.md
+
+For diagnosis, keep the game working with `version.dll` removed.
+If continuing with a controlled test, **only use Steam's built-in
+offline-without-EAC launch** and first isolate the components:
+remove `NBA2K26PortraitProbe.asi` from the game `scripts` folder,
+then (only if explicitly willing) try the same x64 `version.dll`
+alone and record any error. Remove the temporary DLL afterward.
+- Fails without an ASI: the proxy loader itself is incompatible
+  or misconfigured for this installation.
+- Starts without an ASI: the original test plugin or the combination
+  was responsible; try ONLY a newly rebuilt probe with
+  `InitializeASI` after verifying the latest CI build passed.
+
+If an error dialog appears, capture its precise text; alternatively
+view Windows Reliability Monitor for the faulting module name.
+Do not attempt alternate `winhttp.dll`/`wininet.dll` proxies,
+random system DLL replacement, or anti-cheat interference
+without game-specific compatibility evidence.
+
+`NBA2K26QoLHook.dll` remains read-only. The photographic portrait
+hook has not been implemented or in-game tested.
