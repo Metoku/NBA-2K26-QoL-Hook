@@ -400,3 +400,56 @@ especially the branches/return and final helper calls.
 No need to force a Decompiler function or run another
 script; don't modify binaries. If it is simply enum
 validation/setting, close the photo-mode branch.
+
+## Complete decompilation screenshot confirms option-cycling handler, not renderer
+
+The user's latest Ghidra screenshot shows a fully updated
+Decompiler for `FUN_140744910`:
+
+```cpp
+void FUN_140744910(longlong param_1,longlong param_2) {
+    int iVar1;
+    int iVar2;
+    iVar2 = *(int *)(*(longlong *)(param_1 + 0x30) + 0x1c);
+    iVar1 = FUN_141fe3a90(10, *(undefined4 *)(param_2 + 0x18));
+    if (iVar1 != 0) {
+        iVar1 = FUN_141fe3a90(11, *(undefined4 *)(param_2 + 0x18));
+        if (iVar1 != 0) {
+            if (iVar2 == 2) iVar2 = 0;
+            else iVar2 = iVar2 + -1;
+        }
+    } else if (iVar2 == 0) {
+        iVar2 = 2;
+    } else {
+        iVar2 = iVar2 + -1;
+    }
+    if (*(int *)(*(longlong *)(param_1 + 0x30) + 0x1c) != iVar2) {
+        *(int *)(*(longlong *)(param_1 + 0x30) + 0x1c) = iVar2;
+        FUN_1425fb230(&DAT_14770fc88,0);
+    }
+}
+```
+
+**Correction / interpretation**: the exact branching should be read
+from the user's pseudocode, not assumed to be a strict modulo
+cycle in all input cases. In all successful paths this is an
+**option/state-changing handler**, not evidence of an image
+resource lookup or a MyNBA team-eligibility decision.
+The 0/1/2 storage corresponds plausibly to the three photo-mode
+labels, and `FUN_1425fb230` is invoked *after* a configuration
+change, consistent with notifying listeners; its precise effect
+is not established.
+
+**Decision:** stop looking at `FUN_140744910` as a hook
+candidate. Do not patch `[*(param_1+0x30)+0x1C]` or
+`FUN_1425fb230` without confirming the owner's UI context,
+actual image selection, safe asset fallback and call path.
+The status remains: **no working NBA 2K26 MyNBA action-photo
+selection hook yet**.
+
+If future static analysis is justified, focus on a proven
+*consumer* of the photo-mode property in actual image
+resolution, not another UI setter or label formatting
+method. The next step must provide stronger independent
+evidence; repeated screenshots of neighboring option
+methods are not warranted.
