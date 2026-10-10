@@ -780,3 +780,39 @@ Do not patch, inject or infer that 2K26's
 `PORTRAIT_CONTEXT` consumer is identical to the
 2K21 historical function until following actual code
 references and behavior.
+
+## NBA2K26 second semantic anchor: chr_r action-image template found (2026-10-10)
+
+The user ran Ghidra Hex Search for UTF-16LE prefix
+`chr_r{0:d4}_a` on NBA2K26.exe. The screenshot
+confirms **one match at VA `0x145406CBC`**.
+The full suffix after `_a` has not yet been separately
+inspected in the NBA2K26 screenshot.
+
+The unique known `PORTRAIT_CONTEXT_{0:x16}` wide
+string is at `0x145406FC0`, **`0x304` bytes later**.
+These two independent literal identifiers are both
+present in 2K21's historically patched portrait
+resource code and nearby within 2K26's string pool.
+Physical string proximity does **not** identify the
+owning code function.
+
+The 2K26 Ghidra search result misleadingly labels
+`0x145406CBC` as the code unit
+`MOVSXD EAX,dword ptr [RAX]`, even though it
+is the UTF-16LE string prefix
+`63 00 68 00 72 00 ...`. This is a **false
+instruction interpretation caused by incomplete
+Ghidra analysis**; do not follow this as executable
+code.
+
+Next bounded inspection: in NBA2K26.exe at
+`0x145406CBC`, clear the incorrectly defined code
+bytes (`C` on misidentified code unit only)
+then define a terminated Unicode string; press
+`X` to inspect recorded references. If there
+are zero, don't repeat the same reference search:
+use a new method to identify the consumer of
+these string constants instead.
+
+No DLL hook or code patch verified yet.
