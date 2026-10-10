@@ -363,3 +363,62 @@ what the original two NBA2K21 patch sites did within
 that game's code, not assume similarity from byte patterns.
 No runtime hook is currently verified. No more
 neighboring screenshots required for this routine.
+
+## Independent re-check of user-uploaded ZIP (2026-10-10)
+
+We separately reprocessed the user's original
+`NBA2K21_Hook V0.0.5/NBA2K_Hook.dll` using a **static**
+UCL NRV2E LE32 decoder and independently re-verified that:
+
+- The full compressed UPX stream starts at **file offset
+  `0x400`**, has **953,116** bytes and compressed
+  Adler-32 **`0x92CF40B8`**.
+- Its unpacked stream has **2,611,750** bytes and uncompressed
+  Adler-32 **`0x67257020`**. Both match the metadata.
+- In this unpacked historical image, there is one literal
+  `forcedisplayphotos` key at `0x1802141A0`.
+  A RIP-relative `LEA` at `0x1800087FC`
+  loads this key.
+- The following branch checks a configuration result at
+  `0x180008808`, then constructs **two code-signature
+  searches and writes** (the first `0x180008820` through
+  `0x180008870`; the second `0x180008880` through
+  `0x1800088DF`) exactly as previously documented.
+- The original `NBA2K_Hook.dll` was **not run** and no
+  old DLL content was committed. UPX instruction filters
+  make some recovered relative-call displacements
+  unreliable, so the apparent pattern construction and
+  imported-pointer call structure are stronger evidence
+  than arbitrary downstream call-target addresses.
+
+### Blocker for an accurate historical port
+
+We have **only the 2021 hook DLL**, not the NBA 2K21
+`NBA2K21.exe` it originally patched. A signature is
+a locator, not a decompilation of the game's actual
+photo-selection/asset-eligibility routine.
+
+The only highly distinctive relaxed match for the
+second 2021 signature in the user's 2K26 build is at
+`0x14347E3F7`. User-provided Ghidra decompilation
+reveals `VCHTTP`, `vchttp_request.vcc`, and
+HTTP-style 200/502/503 statuses nearby. **We cannot
+identify that 2K26 branch as the MyNBA action-photo
+selection check**, and touching it risks network
+state handling.
+
+**Recommended next evidence path:** if the user owns
+the historical **NBA 2K21 executable locally**, perform
+a *read-only* Ghidra search for the two **original exact
+signatures in that actual historical executable**,
+disassemble their owning functions and determine what
+the branches really test. Compare the verified function
+logic to NBA2K26's corresponding subsystem. No need
+to upload or distribute the copyright-protected game
+binary itself.
+
+If NBA 2K21 is unavailable, stop signature porting
+as a blind alley; look for an independently evidenced
+NBA2K26 MyNBA image resolver call path instead.
+Do not instruct the user to download unofficial
+executables, patch VCHTTP, or try x64dbg again.
