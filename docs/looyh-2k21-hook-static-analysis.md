@@ -586,3 +586,95 @@ instructions and Decompiler if usable. We need both
 original checks before seeking the semantic equivalent
 within NBA2K26.exe. Never NOP or copy historical
 address/signature to 2K26 without validation.
+
+## Full decompiled NBA2K21.exe character-IFF resolver confirms original photo gate
+
+The user pasted the full `FUN_140fce570` function
+containing the **second** Looyh patch at
+`0x140FCE5FF`:
+
+```cpp
+if (param_3[1] == 0) {
+  lVar2 = *(longlong *)(param_3 + 4);
+  if (lVar2 == 0) return;
+  switch (*param_3) {
+    case 0:
+      pwVar3 = L"chr_g{0:d4}.iff";
+      uVar1 = *(ushort *)(lVar2 + 0xf2);
+      goto LAB_140fce74c;
+    case 1:
+      if (*(longlong *)(lVar2 + 0x60) !=
+          *(longlong *)(lVar2 + 0xc8)) return;
+      local_18 = &local_34;
+      local_10 = FUN_141d43610;
+      local_2c = 2;
+      local_34 = param_4;
+      if ((int)param_5 < 0) {
+        local_38 = *(uint *)(lVar2 + 0x2f8);
+        pwVar3 = L"chr_r{0:d4}_a{1}.iff";
+      } else {
+        local_38 = param_5;
+        pwVar3 = L"chr_r{0:d4}_a{1}.iff";
+      }
+      goto LAB_140fce753;
+    case 5:
+      if (*(longlong *)(lVar2 + 0x60) ==
+          *(longlong *)(lVar2 + 0xc0)) {
+        /* construct chr_m{0:d4}_mural.iff */
+      }
+  }
+} else if (param_3[1] == 2) {
+  /* chr_g, chr_coach_r{0:d4}_a1.iff,
+     chr_coach_m{0:d4}_mural.iff */
+}
+```
+
+The resolver invokes `FUN_141d46ee0` with the selected
+template. This confirms the original second Looyh
+NOP patch bypasses a **character-image resource
+eligibility gate**, preceding
+`chr_r{0:d4}_a{1}.iff` processing. Unknown whether
+`+0x60/+0xC8` are player/team fields, flags or pointers;
+do not label them without additional evidence. Earlier
+Ghidra symbolic prefix `u_` is Unicode string notation,
+not part of the path.
+
+The user ALSO supplied a screenshot at the **first**
+historical patch site `0x14101D107`, but the Decompiler
+still displays `FUN_140fce570` from the prior site.
+That shown pseudocode **does not describe**
+`0x14101D107`. The Listing at first site shows:
+
+```asm
+0x14101D103 MOV  RAX,[RSI+0x18]  ; preceding bytes 48 8B 46 18
+0x14101D107 TEST EBX,EBX
+0x14101D109 JNZ  LAB_14101D139
+0x14101D10B TEST RAX,RAX
+0x14101D10E JZ   LAB_14101D12B
+0x14101D110 CMP  [RAX],R13
+0x14101D113 JZ   LAB_14101D11A
+0x14101D115 MOV  EBX,R12D
+0x14101D118 JMP  LAB_14101D139
+0x14101D11A TEST dword ptr [RAX+0x130],0x40000000
+0x14101D124 JZ   LAB_14101D12B
+0x14101D126 MOV  EBX,R12D
+0x14101D129 JMP  LAB_14101D139
+```
+
+Original hook's first patch replaces the first four bytes
+`85 DB 75 2E` with `31 DB 90 90`, which both
+**zeroes EBX** and **removes the short conditional
+branch**. Its semantics must be established using the
+**actual function around first site**, not the
+`FUN_140fce570` pseudocode.
+
+**Next user instruction:** Ghidra in NBA2K21.exe,
+G -> `14101D103`, select first `48` byte,
+press D if undefined, click inside listing at the
+first patch and wait for Decompiler to follow (or open
+a newly selected function). If Ghidra cannot
+decompile enclosing function due to partial analysis,
+screenshot surrounding Listing rather than creating
+a false function starting in the middle of a basic
+block. No patches until 2K26 resource-path logic
+is independently verified.
