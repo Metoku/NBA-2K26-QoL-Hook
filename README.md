@@ -72,6 +72,21 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\portrait_string
 This reports file offsets of text matches, **not** a working portrait hook or
 game-memory addresses. The existing DLL still does not modify NBA 2K26.
 
+## Action-shot-only field-reader investigation
+
+The latest verified Ghidra evidence shows NBA 2K26 player-data
+`ActionShotId` uses a 16-bit field at object offset **`+0x3DC`**.
+Both short functions identified so far **write** this field; the actual
+action-portrait resource selection function remains unknown.
+
+The [ActionShotId candidate reader script](ghidra_scripts/NBA2K26ActionShotReaders.java)
+searches the exact fingerprinted executable for possible **reads**
+of `+0x3DC`, groups them using the confirmed x64 unwind table, and
+writes a small review report. This is read-only Ghidra research,
+**not** a working portrait override.
+
+[How to run and interpret its report](docs/ghidra-action-shot-readers.md)
+
 ## Limitations and safety
 
 - This skeleton is not a usable NBA 2K26 mod yet. Do not place the DLL in your game directory or attempt to inject it.
