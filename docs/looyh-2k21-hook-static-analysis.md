@@ -455,3 +455,44 @@ This will tell us whether the old branch was in the
 same networking subsystem or another function.
 Only then inspect the first patch at `0x14101D107`.
 Do **not** NOP either game executable.
+
+## Ghidra NBA2K21.exe first Listing screenshot at second old signature
+
+User navigated to **`0x140FCE5FF`** (the genuine 2K21
+second patch site). The Listing has many undefined bytes
+before it and Ghidra currently creates only the truncated
+`UndefinedFunction_140fce5ff`; Decompiler shows
+`in_ZF`, reflecting a missing predecessor rather than
+actual dependency on an ambient undefined flag.
+
+The immediately preceding raw bytes in screenshot decode to:
+
+```asm
+0x140FCE5F4  48 8B 81 C8 00 00 00  MOV RAX, qword ptr [RCX+0xC8]
+0x140FCE5FB  48 39 41 60           CMP qword ptr [RCX+0x60], RAX
+0x140FCE5FF  0F 85 69 01 00 00     JNZ 0x140FCE76E
+0x140FCE605  44 8B 45 30           MOV R8D, dword ptr [RBP+0x30]
+0x140FCE609  48 8D 45 D4           LEA RAX, [RBP-0x2C]
+```
+
+This is **different from the tested NBA2K26.exe hit**
+`0x14347E3F7`, where the JNZ follows
+`TEST EAX,EAX` on a function return in a VCHTTP
+request handler. The wildcard signature similarity
+was misleading.
+
+The old 2K21 branch checks equality of two fields
+in an unknown object at offsets `0x60` and
+`0xC8`; no proof yet those fields are photos,
+images, or player records. It is also not known
+that the instruction at `0x140FCE5F4` belongs
+to the genuine function path until disassembly.
+
+**Immediate safe next step:** User in Ghidra NBA2K21.exe
+press G → `140FCE5F4`, press D on that first
+`48` byte (disassemble), and send a Listing
+screenshot including the new instructions before
+`0x140FCE5FF`. Do not edit instructions or try
+to patch NBA2K26. If the partial function persists,
+inspect raw Listing and fix function boundaries only
+after observing a valid enclosing start.
