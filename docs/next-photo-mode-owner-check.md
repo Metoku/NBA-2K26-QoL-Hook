@@ -193,3 +193,41 @@ text report. Script compatibility with the user's Ghidra
 installation has not yet been validated; send the compile
 error verbatim if encountered. This is one quick 2.67 MB
 table read, not another huge executable scan.
+
+## User's boundary report: both settings share entry `0x140742880`
+
+The SHA-256-gated `NBA2K26PhotoModeOwnerBoundary.java` script
+completed successfully. Its targeted read of the PE exception
+directory (`.tls` block in this Ghidra import) established:
+
+| Target | Unwind fragment begin | Fragment end (exclusive) |
+| --- | --- | --- |
+| Photo style constructor reference `0x1407429EE` | `0x140742880` | `0x140742B43` |
+| Photo mode constructor reference `0x140742A4A` | `0x140742880` | `0x140742B43` |
+
+The 707-byte region has a previously identified Ghidra
+function symbol `FUN_140742880` at its start; Ghidra still
+reported `(none)` as the **function containing either interior
+target**, indicating the region is not yet fully disassembled
+or recognized in the Ghidra function body.
+
+The only existing reference to entry `0x140742880`
+was `DATA` from `0x155C7E844`. Since the reference is
+data-only and may come from PE runtime-function metadata,
+**do not identify it as a C++ caller**. Need actual code
+references or other evidence of ownership.
+
+### One follow-up Ghidra inspection
+
+1. Goto `140742880` at start of the known bounded region.
+2. If undefined, press `D` at the entry once to disassemble.
+   Do not clear/redefine or modify the game executable.
+3. Screenshot the Listing prologue together with the
+   Decompiler (if it updates). If the Decompiler still shows
+   stale or unrelated code, send the Listing first.
+4. Determine whether surrounding code refers to arena
+   graphics / broadcast presentation or is used in MyNBA.
+   If arena-only, stop chasing these objects.
+
+**Not yet verified:** photo-eligibility check, asset
+resolver, MyNBA consumer, or patchable function.
