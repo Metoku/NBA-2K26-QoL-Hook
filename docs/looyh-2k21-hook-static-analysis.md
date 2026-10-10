@@ -422,3 +422,36 @@ as a blind alley; look for an independently evidenced
 NBA2K26 MyNBA image resolver call path instead.
 Do not instruct the user to download unofficial
 executables, patch VCHTTP, or try x64dbg again.
+
+## Confirmed: BOTH unmodified Looyh signatures in a legitimately downloaded Epic NBA2K21.exe (2026-10-10)
+
+The user owns NBA 2K21 on Epic Games; Legendary's app ID is
+`639977eecfd2497c941b71af949b5067`, visible release
+version `1.12.135040`. They used Legendary's selective
+`--prefix "NBA2K21.exe"` download (one file, size 73.15 MiB,
+download 27.22 MiB, 95 others skipped), without installing
+the whole game. Screenshots show Ghidra search in **NBA2K21.exe**:
+
+1. Old Looyh signature `85 DB 75 2E 48 85 C0 74`:
+   exactly **ONE match** at **VA `0x14101D107`**.
+2. Old Looyh signature
+   `0F 85 69 01 00 00 44 8B 45 30 48 8D`:
+   exactly **ONE match** at **VA `0x140FCE5FF`**.
+
+This confirms both literal patch target patterns survived
+in the Epic NBA2K21 build, despite its 1.12 version
+dating after Looyh 2020. It does **not** prove same
+branch semantics, nor that the historical NOP patch is
+safe or fully functional on this build. No files edited.
+
+**Highest-value next evidence:** In Ghidra's NBA2K21.exe
+(not NBA2K26.exe), navigate to **`0x140FCE5FF`**,
+disassemble only if undefined, and provide 15–20 surrounding
+Listing instructions with Decompiler (or the complete
+pseudocode). Compare the second patch site with NBA2K26's
+distinctive wildcard match `0x14347E3F7`, already
+identified inside a **VCHTTP request state handler**.
+This will tell us whether the old branch was in the
+same networking subsystem or another function.
+Only then inspect the first patch at `0x14101D107`.
+Do **not** NOP either game executable.
