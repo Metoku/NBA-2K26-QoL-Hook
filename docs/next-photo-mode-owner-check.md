@@ -453,3 +453,34 @@ resolution, not another UI setter or label formatting
 method. The next step must provide stronger independent
 evidence; repeated screenshots of neighboring option
 methods are not warranted.
+
+## Next hypothesis check: distinct method at candidate table index 25
+
+After verifying `FUN_140744910` is an option-change/UI
+handler, the next useful question is whether any distinct
+method in the candidate photo-mode table **reads or exposes**
+the mode value rather than just changing it.
+
+The previous SHA-matched table inspector report recorded:
+
+| table | index 25 (+0xC8) | function |
+|---|---|---|
+| Candidate photo mode `0x143ECC9C0` | `0x143ECCA88` | `0x140765D40` |
+| Candidate photo style `0x143ECCA80` | `0x143ECCB48` | `0x140765D60` |
+
+The two different method addresses are **not** evidence of a
+MyNBA image selector or even of getter behavior. We have not
+examined their bodies. They may simply serialize or format
+presentation settings.
+
+**One static screenshot:** open `0x140765D40` in Ghidra,
+and show Listing and correct Decompiler (if available) for
+the full short function. Do not create a hook or modify
+roster data. If it is only a trivial accessor/serialization
+method, stop chasing this table. If it references
+player-photo resolution, investigate its caller/context
+with a concrete MyNBA-specific trace.
+
+This is **one bounded viability check**, not a prediction
+that the hook is close. A DLL with six policy tests still
+lacks its NBA2K26 game integration.
