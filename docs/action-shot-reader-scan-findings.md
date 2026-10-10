@@ -55,3 +55,58 @@ confirm or reject this quickly, without another 1+ GB scan.
 The target is only the **real full-body action-shot disappearing after
 trades in offline MyNBA**; real player headshots remain visible.
 The existing QoL Hook DLL is still a nonfunctional skeleton.
+
+
+## Verified follow-up: small getter at 0x1427CD220
+
+The user manually cleared Ghidra's mistaken `float` data definition,
+disassembled from `0x1427CD220`, created the function
+`FUN_1427cd220`, and provided a successful Ghidra decompilation.
+
+The screenshot shows the following structure (reformatted for clarity):
+
+```c
+if (*(char *)(param_2 + 4) == 7)
+    source = *(longlong *)(param_2 + 8);
+else
+    source = 0;
+value = *(ushort *)(source + 0x3dc);
+*(byte *)(param_3 + 4) = 2;
+*(uint *)(param_3 + 8) = (uint)value;
+return 1;
+```
+
+Ghidra's parameter typing remains inferred. The zero-source case
+would produce a null-relative read if reachable, so **do not assume
+every branch is semantically valid from untyped pseudocode alone**.
+
+What this *does* establish:
+- A genuine instruction `movzx eax, word ptr [rax+0x3dc]` at
+  `0x1427CD22E`.
+- A small typed property-access/transfer helper that returns a
+  16-bit field value in a generic output representation.
+- The nearby byte type check `[rdx+4] == 7` and output type marker
+  `[r8+4] = 2` are consistent with generic property handling.
+
+What this *does not* establish:
+- That a MyNBA action-photo screen invokes this getter.
+- That the function loads any image or checks a player's team.
+- A valid runtime hook or robust player-object address.
+
+**Decision:** Stop scanning by `+0x3DC`. The confirmed reader,
+getter and setters are data plumbing. The high-value next step is
+to identify the **action-photo resource ID/name lookup** and the
+conditional fall-through to in-game-rendered portraits.
+
+Outside modding reports provide context, not verified implementation:
+- NBA2K26 PC modders describe a portrait/headshot mod override
+  directory `mods/player_images`:
+  https://www.reddit.com/r/NBA2k/comments/1orcfv7/how_do_i_add_mods_to_pc/
+- Community users describe real full-body pictures disappearing
+  with player/team changes:
+  https://forums.operationsports.com/forums/forum/basketball/nba-2k-basketball/26882570-players-like-kevin-durant-landry-shamet-et-al
+
+The next investigation should examine real action-portrait resource
+identifiers and requests, with read-only analysis first. An image
+replacement feature in an external mod is not itself proof that the
+game's automatic after-trade fallback is patchable at any known address.
