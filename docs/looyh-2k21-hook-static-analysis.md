@@ -61,3 +61,46 @@ Do not patch anything. Record either the total count and a **single matching cod
 This is the first prior-generation hook-based code signature evidence that is not a speculative getter/label/offset/string scan. We should **not** rerun x64dbg (it crashed), ProcMon (completed), or broad brute-force offset searches.
 
 References for decompression format: [UPX compression constants](https://github.com/upx/upx/blob/devel/src/conf.h), [UCL NRV2E decompressor](https://sources.debian.org/src/ucl/1.03%2Brepack-5/src/n2e_d.c), and [UCL getbit macro](https://github.com/korczis/ucl/blob/master/src/getbit.h).
+
+## User verification on NBA 2K26: exact patches do NOT match
+
+The user ran Ghidra **Search → Memory**, Hex format, on
+their fingerprinted NBA 2K26 import. Both full historic patterns
+returned **zero matches**:
+
+- `85 DB 75 2E 48 85 C0 74` — 0 results
+- `0F 85 69 01 00 00 44 8B 45 30 48 8D` — 0 results
+
+This rules out **literal byte-for-byte porting** of the
+two old 2021 patch locations to this 2026 build. Neither
+absence demonstrates that an equivalent higher-level
+eligibility check does not exist.
+
+### One narrowly relaxed static search
+
+Ghidra supports hex-byte wildcards, with `??` meaning
+any single byte. The most conservative relaxation is
+to ignore only the conditional branch displacement in
+the first signature:
+
+```text
+85 DB 75 ?? 48 85 C0 74
+```
+
+This keeps seven of the eight bytes fixed while allowing
+the short `JNE` target to differ between versions.
+**If a hit is reported, it is not a hook target by itself**:
+the occurrence must start on genuine instruction boundaries,
+live in executable code, and be proven to be the MyNBA
+action-photo-vs-cyberface eligibility branch and preserve
+the original missing-photo fallback.
+
+If this single relaxed search also yields zero matches,
+avoid repetitive random address exploration. A different
+compilation or routine structure likely prevents
+simple signature reuse; further progress will require
+a structural/semantic code comparison grounded in a
+known NBA 2K26 photo-resource flow.
+
+Ghidra wildcard syntax reference:
+https://scrapco.de/ghidra_docs/VERSION12/Features/Base/Search/Search_Formats.htm
