@@ -32,8 +32,19 @@ set_target_properties(NBA2K26PortraitProbe PROPERTIES
   OUTPUT_NAME "NBA2K26PortraitProbe"
 )
 
+
+# Standalone read-only process inspector. Does NOT load native plugins into game.
+add_executable(NBA2K26PortraitTool src/portrait_tool.cpp)
+target_compile_features(NBA2K26PortraitTool PRIVATE cxx_std_17)
+target_compile_definitions(NBA2K26PortraitTool PRIVATE WIN32_LEAN_AND_MEAN NOMINMAX)
+target_link_libraries(NBA2K26PortraitTool PRIVATE bcrypt)
+
 include(CTest)
 if(BUILD_TESTING)
+  add_test(NAME PortraitToolSelfTest
+    COMMAND NBA2K26PortraitTool --self-test)
+  add_test(NAME PortraitToolHelp
+    COMMAND NBA2K26PortraitTool --help)
   add_executable(DllSmokeTest tests/dll_smoke_test.cpp)
   target_compile_features(DllSmokeTest PRIVATE cxx_std_17)
   add_test(NAME DllSmokeTest
