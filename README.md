@@ -2,6 +2,20 @@
 
 An experimental, community-made Windows x64 C++ project for investigating quality-of-life improvements for the **Steam edition of NBA 2K26**, focused on offline MyNBA.
 
+## New: standalone portrait diagnostics (research branch)
+
+The project now also builds **NBA2K26PortraitTool.exe**, a separate
+read-only Windows program that can inspect the known portrait branch
+signatures inside an NBA 2K26 process started through Steam's built-in
+**without EAC (offline only)** launch choice. It does not require the
+previously unstable ASI/DLL loader.
+
+See [standalone portrait tool instructions](docs/standalone-portrait-tool.md)
+for how to run it and interpret the results. **It does not fix portraits
+or modify game memory.** The next milestone is confirming that this
+external tool can read the expected four branch sites on the user's
+running offline build.
+
 ## Goals (not yet implemented)
 
 - Keep existing photo/headshot portraits displayed after players change teams.
