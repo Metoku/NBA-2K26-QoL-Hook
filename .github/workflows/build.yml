@@ -34,9 +34,9 @@ jobs:
       - name: Test read-only portrait string probe
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/test_portrait_string_probe.ps1
 
-      - name: Upload DLL
+      - name: Upload file-only portrait diagnostic
         uses: actions/upload-artifact@v4
         with:
-          name: NBA2K26QoLHook-windows-x64
-          path: build/Release/NBA2K26QoLHook.dll
+          name: NBA2K26PortraitTool-file-only-x64
+          path: build/Release/NBA2K26PortraitTool.exe
           if-no-files-found: error

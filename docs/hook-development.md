@@ -43,3 +43,63 @@ Home/Away shoes are a separate editing and persistence issue and should be inves
 ## Safety
 
 Local offline testing only. Back up saves. No anti-cheat bypass, no online-game modification, and no guessed production memory writes.
+
+## 2026-10-11: External ASI loading feasibility and EAC risk
+
+The user agreed in principle to installing a separate native DLL/ASI loader
+for offline MyNBA testing. An ASI loader has **not** been installed or
+validated in NBA 2K26. Asset-only `.iff` file loading from `mods` does not
+imply an arbitrary native-plugin loader.
+
+General-purpose candidate: ThirteenAG's open-source Ultimate ASI Loader,
+which can use a proxy DLL named for an imported Windows library and load
+`.asi` plugins in a `scripts` folder. Its advertised support is for games
+that use compatible DLL imports; no NBA 2K26-specific compatibility proof
+has yet been found.
+
+**Crucial:** NBA 2K Support describes Easy Anti-Cheat for NBA 2K on PC
+(https://support.nba2k.com/hc/en-us/articles/42216723600659-NBA-2K-Anti-Cheat-on-PC).
+This means installing an unverified third-party native-code loader—even for
+offline MyNBA—may cause launch failures or anti-cheat action. Do not install
+or launch a loader as part of research without reliable game-specific
+compatibility/support. We will not use instructions to disable or evade
+EAC, and we will not try this in competitive modes.
+
+To identify *candidate* native imports without loading plugins or touching
+EAC, run Ghidra's read-only
+`ghidra_scripts/NBA2K26ImportedDLLsReport.java` on the already imported
+verified NBA2K26.exe build. It lists external library names that match
+known ASI proxy DLL filenames. Even a matching name does not establish
+loader compatibility or permission to run the loader in this game.
+
+Until safe loading can be established, code changes must remain static or
+execute in independent unit tests outside NBA 2K26. The portrait DLL has
+no working runtime code hook.
+
+### 2026-10-11: actual Ghidra external-library report
+
+The user executed `NBA2K26ImportedDLLsReport.java` on the
+verified NBA2K26.exe and the read-only report listed these names
+as recognized x64 Ultimate ASI Loader proxy-DLL filename candidates:
+
+| Ghidra external-library name | General loader has x64 proxy option |
+|---|---|
+| `VERSION.DLL` | Yes |
+| `WINHTTP.DLL` | Yes |
+| `WININET.DLL` | Yes |
+
+All three appear in the verified build's Ghidra **external library
+manager**. This is not yet a validated PE import descriptor report,
+not proof that the loader is compatible with NBA 2K26, and not
+proof that EAC will allow it. No third-party DLL has been installed.
+
+The official Ultimate ASI Loader README documents all three names:
+https://github.com/ThirteenAG/Ultimate-ASI-Loader
+The official NBA 2K EAC documentation is:
+https://support.nba2k.com/hc/en-us/articles/42216723600659-NBA-2K-Anti-Cheat-on-PC
+
+**Next step:** independent game-specific confirmation that native
+plugins are permitted and can load safely, or proceed with a
+standalone simulation of the now-identified team-selection logic
+outside the game. Do not deploy a proxy DLL on the basis of imports
+alone, and do not bypass EAC.

@@ -2,6 +2,20 @@
 
 An experimental, community-made Windows x64 C++ project for investigating quality-of-life improvements for the **Steam edition of NBA 2K26**, focused on offline MyNBA.
 
+## New: standalone portrait diagnostics (research branch)
+
+**Safety update (2026-10-11):** The first external process inspector
+caused a game crash. **Do not run older NBA2K26PortraitTool.exe builds.**
+The current EXE was rewritten to inspect only an **on-disk NBA2K26.exe**
+while the game is **closed**. It does not call OpenProcess, query modules,
+or read running game memory.
+
+See [standalone portrait tool instructions](docs/standalone-portrait-tool.md)
+for safe file-only usage and recovery after the reported crash.
+**It does not fix portraits, load a DLL, or modify the game.**
+Use only artifact `NBA2K26PortraitTool-file-only-x64` from a successful
+build containing this change.
+
 ## Goals (not yet implemented)
 
 - Keep existing photo/headshot portraits displayed after players change teams.
@@ -71,6 +85,24 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\tools\portrait_string
 
 This reports file offsets of text matches, **not** a working portrait hook or
 game-memory addresses. The existing DLL still does not modify NBA 2K26.
+
+## Current portrait branch validation (research branch)
+
+The Ghidra study of `FUN_1425F6930` in the exact, verified NBA2K26
+build identified four short conditional jumps around the request/team-ID
+comparison. A new **read-only** DLL export `QoLInspectPortraitBranches()`
+validates the loaded host is `NBA2K26.exe`, checks the entire original EXE's
+SHA-256 against the known build, and verifies the four branch encodings in
+loaded image memory. Return codes: 0=verified, 1=not the game process,
+2=unable to read/hash EXE, 3=unknown build, 4=invalid PE/mapping, 5=branch
+bytes do not match. Nothing is patched by this export; the DLL still has
+**no effect on portraits**. There is no DLL injection or loader setup provided.
+
+The source is `src/portrait_gate_validation.cpp` with a pure static unit test
+in `tests/portrait_gate_validation_test.cpp`. Run `ctest` on Windows as above.
+Do not interpret a passing static branch check as proof of a functioning
+portrait override. An eventual hook must preserve behavior when image/team
+references are missing and should only run in backed-up offline MyNBA tests.
 
 ## Limitations and safety
 
