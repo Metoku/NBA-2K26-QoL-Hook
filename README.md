@@ -4,17 +4,17 @@ An experimental, community-made Windows x64 C++ project for investigating qualit
 
 ## New: standalone portrait diagnostics (research branch)
 
-The project now also builds **NBA2K26PortraitTool.exe**, a separate
-read-only Windows program that can inspect the known portrait branch
-signatures inside an NBA 2K26 process started through Steam's built-in
-**without EAC (offline only)** launch choice. It does not require the
-previously unstable ASI/DLL loader.
+**Safety update (2026-10-11):** The first external process inspector
+caused a game crash. **Do not run older NBA2K26PortraitTool.exe builds.**
+The current EXE was rewritten to inspect only an **on-disk NBA2K26.exe**
+while the game is **closed**. It does not call OpenProcess, query modules,
+or read running game memory.
 
 See [standalone portrait tool instructions](docs/standalone-portrait-tool.md)
-for how to run it and interpret the results. **It does not fix portraits
-or modify game memory.** The next milestone is confirming that this
-external tool can read the expected four branch sites on the user's
-running offline build.
+for safe file-only usage and recovery after the reported crash.
+**It does not fix portraits, load a DLL, or modify the game.**
+Use only artifact `NBA2K26PortraitTool-file-only-x64` from a successful
+build containing this change.
 
 ## Goals (not yet implemented)
 
