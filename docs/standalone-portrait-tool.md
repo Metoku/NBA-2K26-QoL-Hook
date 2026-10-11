@@ -1,67 +1,85 @@
-# Standalone NBA 2K26 portrait tool (read-only first milestone)
+# NBA 2K26 Portrait Tool — file-only diagnostic
 
-**Status:** Experimental external diagnostic, NOT a portrait fix.
+**Important safety change (2026-10-11):** The first external memory
+inspector caused the user's running NBA 2K26 instance to crash. It
+used OpenProcess, CreateToolhelp32Snapshot, and ReadProcessMemory,
+which were read-only API calls but may still have conflicted with
+the game. The exact root cause is **not established**.
 
-This tool is a normal Windows x64 console EXE. It is not a DLL or ASI,
-does not use the mods folder, does not install any proxy DLL, and does not
-modify the game or its executable.
+**Do not run any prior build of NBA2K26PortraitTool.exe.**
+The tool has been rewritten as a **FILE-ONLY inspector**: it contains
+NO code for locating or opening game processes or reading process memory.
+The game **must be fully CLOSED** before use.
 
 ## What it does
 
-1. Locates a running process named NBA2K26.exe (Windows Toolhelp API).
-2. Opens it with only PROCESS_QUERY_LIMITED_INFORMATION and PROCESS_VM_READ.
-3. Reads the game's installed executable and checks the entire file against
-   our previously Ghidra-verified exact SHA-256 and size.
-4. Finds the loaded executable base through a read-only module snapshot.
-5. Reads **two bytes at each of four** known portrait selector branches.
-6. Prints PASS or STOP for each branch, then exits.
+1. Accepts the original NBA2K26.exe path on the command line (drag-and-drop
+   also supplies the path).
+2. Opens only that **on-disk file** for reading, without modifying it.
+3. Confirms the exact previously verified size and SHA-256.
+4. Parses the file's original 64-bit PE section headers and translates
+   the four known Ghidra branch RVAs to on-disk file offsets.
+5. Checks the four original short-jump instruction pairs and prints results.
 
-Its known build currently has SHA-256:
+It **does not** attach to the game, open a running process, inspect
+live game memory, inject DLLs, add hooks, change bytes, or change
+portrait behavior. It cannot fix the portrait-after-trade issue yet.
+
+The expected file SHA-256 for this one game build is:
 
     efbfce3d628e17a16d4cba0c28ed09767d21abef422adc49ca26752ed40a8a39
 
-Game updates cause a fail-closed result. These addresses are offsets from the
-loaded module base, not absolute addresses; they are deliberately **not**
-used for patching.
+Any different build fails closed. It may take time to hash ~1.1 GB.
 
-The tool **does not** verify photo assets, force portraits, write any game
-memory, inject code, alter saves, attach a debugger, or interact with EAC.
-It cannot repair the photo-after-trade problem yet.
+## Restoring the clean installation
 
-## How to run
+Before trying *anything* else, remove only the DLL proxy and ASI plugin
+files personally added during our previous tests from the game's
+installation directory, leaving the original game, legitimate mods
+and Windows System32 files alone.
 
-1. Remove the failed ASI loader from earlier tests:
-   only the added game-folder \`version.dll\` or \`dinput8.dll\`, and
-   \`scripts/NBA2K26PortraitProbe.asi\`. Do not remove any Windows
-   system DLLs or existing legitimate game files. The normal game
-   should start without these experimental files.
-2. Back up your offline MyNBA save.
-3. From GitHub PR #13, use the latest **successful** "Windows x64 Build"
-   action. Download its \`NBA2K26QoLHook-windows-x64\` artifact ZIP.
-4. Extract **NBA2K26PortraitTool.exe** into any convenient folder,
-   e.g. Downloads\\NBA2K26PortraitTool. Do not put it in the game's
-   installation directory or mods folder.
-5. Open NBA 2K26 via Steam's **built-in offline without EAC** launch choice.
-   If that launch option is unavailable, stop here.
-6. Open a PowerShell terminal in the extracted tool folder and run:
+Launch NBA 2K26 **without any diagnostic tools running**. If it still
+crashes, stop and check Windows Reliability Monitor (\`perfmon /rel\`)
+for the faulting module and exception code; we should resolve that
+before continuing.
 
-       .\NBA2K26PortraitTool.exe
+## Using the new offline file inspector (only if wanted)
 
-7. Copy the printed output. "PASS: 4/4" only demonstrates our branch
-   signature matches the running build; it does **not** mean portraits
-   will work after trades.
+1. **Close NBA 2K26 completely**, including any launcher attempt still
+   running. Do not run the inspector simultaneously with the game.
+2. Open the latest **successful** Windows x64 Build workflow from this
+   PR's research branch. Download the artifact named
+   \`NBA2K26PortraitTool-file-only-x64\`.
+3. Extract the included \`NBA2K26PortraitTool.exe\` somewhere outside
+   the game's installation folder. Only use the artifact built from
+   the 2026-10-11 file-only rewrite or newer.
+4. Open Steam → NBA 2K26 → Manage → Browse local files, and locate
+   the installed \`NBA2K26.exe\`. Do NOT move or modify that file.
+5. For a quick self-test, open PowerShell in the tool folder:
 
-The tool may take some time to fingerprint the >1 GB executable.
-Access denied, missing game process, unknown build, and unexpected
-branch bytes are handled as STOP cases without changes.
+       .\NBA2K26PortraitTool.exe --self-test
 
-Optional quick checks **without launching the game**:
+6. For the file-only report, run, replacing the path as appropriate:
 
-    .\NBA2K26PortraitTool.exe --self-test
-    .\NBA2K26PortraitTool.exe --help
+       .\NBA2K26PortraitTool.exe "D:\SteamLibrary\steamapps\common\NBA 2K26\NBA2K26.exe"
 
-A successful read-only test will guide a separately reviewed,
-opt-in implementation of a portrait override that preserves
-missing-photo fallback behavior. Until then do not attempt to
-convert the two team-match JZ instructions to JMP: such patches
-would also bypass some null-team-reference safeguards.
+   Or drag the game's EXE icon onto the tool's EXE icon. The game
+   should remain closed throughout the test.
+7. Report the tool's Console results. The expected PASS on four
+   branches means only that our original Ghidra bytes were rechecked
+   from disk. It does **not** mean we have a working portrait fix.
+
+Running with no path deliberately exits immediately with usage
+instructions; it will NEVER search for a running NBA 2K26 instance.
+
+## Crash evidence if the clean game is affected
+
+Use Win+R → \`perfmon /rel\` → select the NBA 2K26 crash →
+\`View technical details\` → note **faulting module**, **exception
+code**, and **time** (no full memory dump necessary).
+If the game works once all diagnostic components are removed,
+the original crash probably involved the live-inspection environment,
+but those details alone do not identify a specific protection.
+
+**Don't attempt more live memory tools or DLL proxy experiments until
+we have a separately validated, game-compatible approach.**
